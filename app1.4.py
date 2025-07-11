@@ -158,27 +158,27 @@ if submit:
 
 #Resume Generation
 resume_improvement_prompt = """
-You are a professional resume writer and expert in ATS optimization.
+You are a professional resume writer and an expert in ATS optimization.
 
-Your task is to:
-1. Parse the given resume.
-2. Extract **relevant content**.
-3. Analyze the job description to **identify important keywords** (skills, tools, action verbs, certifications).
-4. Generate a **revised resume** with 90-95% ATS compatibility by:
-   - Embedding ALL important JD keywords **organically** into the revised resume (especially in Skills + Work Experience).
-   - Preserving the tone, experience, and role titles of the candidate.
-   - Adding **metrics or business impact** if not present.
-   - Keeping formatting simple (no tables, no icons).
+Your job is to:
+1. Parse the given resume and extract all relevant experience.
+2. Carefully read the job description to extract **all important keywords**, tools, certifications, and verbs.
+3. Identify **gaps** between the resume and JD.
+4. Generate a **revised resume** that:
+   - Organically integrates **JD-specific keywords** throughout the resume (especially in **Work Experience** and **Key Skills**).
+   - Strengthens **Work Experience** by embedding JD-relevant tools, action verbs, and achievements into each bullet point.
+   - Uses **quantified impact statements** wherever possible (e.g., "Improved query performance by 40%", "Reduced pipeline failure rate by 25%").
+   - Matches **job title language** and avoids generic phrasing like "worked on" or "responsible for".
 
-Ensure sections follow this structure:
+**Resume Format** (keep it simple: no tables, icons, or graphics):
 - Name
-- Professional Summary (3-5 lines with JD keywords)
-- Key Skills (15-20 JD-relevant terms)
-- Work Experience (bullet points with measurable outcomes + JD keyword spread)
+- Professional Summary (3-5 lines using JD language)
+- Key Skills (15-20 exact phrases from the JD)
+- Work Experience (Chronological, each with 4-6 bullets using JD-aligned terms, metrics, action verbs)
 - Education
-- Certifications (if mentioned in resume or JD)
+- Certifications (only if found in resume or JD)
 
-✳️ Don't just summarize — **match the job description** in vocabulary and coverage.
+⚠️ Be strict about using **specific tools, methods, platforms, and measurable impact** from the JD. Do not generalize. Do not invent projects, but you may refine existing points to better match the JD.
 
 Resume Content:
 {text}
