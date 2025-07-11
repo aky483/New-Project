@@ -9,10 +9,13 @@ from docx import Document
 from io import BytesIO
 import re
 import plotly.graph_objects as go
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Use secret from Streamlit Cloud
+genai.configure(
+    api_key=st.secrets["gemini"]["api_key"],
+    transport="rest",
+    client_options={"api_endpoint": "generativelanguage.googleapis.com"}
+)
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
