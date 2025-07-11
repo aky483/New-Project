@@ -158,27 +158,28 @@ if submit:
 
 #Resume Generation
 resume_improvement_prompt = """
-You are a professional resume writer and an expert in ATS optimization.
+You are a professional resume writer and an expert in ATS optimization and role alignment.
 
 Your job is to:
-1. Parse the given resume and extract all relevant experience.
-2. Carefully read the job description to extract **all important keywords**, tools, certifications, and verbs.
-3. Identify **gaps** between the resume and JD.
-4. Generate a **revised resume** that:
-   - Organically integrates **JD-specific keywords** throughout the resume (especially in **Work Experience** and **Key Skills**).
-   - Strengthens **Work Experience** by embedding JD-relevant tools, action verbs, and achievements into each bullet point.
-   - Uses **quantified impact statements** wherever possible (e.g., "Improved query performance by 40%", "Reduced pipeline failure rate by 25%").
-   - Matches **job title language** and avoids generic phrasing like "worked on" or "responsible for".
+1. Parse the candidate's resume and extract **real experience**.
+2. Analyze the job description to extract **critical keywords, tools, titles, skills, certifications, and action verbs**.
+3. Identify mismatches between the resume and JD (especially job titles like "Data Analyst" vs. "Data Engineer").
+4. Reframe the resume to match the **job role in the JD**, especially:
+   - Modify job titles to **align with the JD role** where reasonable (e.g., change "Data Analyst" to "Data Engineer" if tools/skills match).
+   - Rewrite bullet points to highlight experience relevant to the **target role**, using the JD’s vocabulary.
+   - Emphasize **tools, platforms, pipelines, databases, programming, and architecture** relevant to the target role.
+   - Add **measurable outcomes and business impact** wherever possible.
 
-**Resume Format** (keep it simple: no tables, icons, or graphics):
+🚫 Do NOT fabricate experience — just reframe existing work to better align with the JD.
+✅ You may upgrade job titles if the responsibilities/tools used justify it.
+
+Format the resume like this (plain text, no tables/icons):
 - Name
-- Professional Summary (3-5 lines using JD language)
+- Professional Summary (3-5 lines using JD language and target role)
 - Key Skills (15-20 exact phrases from the JD)
-- Work Experience (Chronological, each with 4-6 bullets using JD-aligned terms, metrics, action verbs)
+- Work Experience (chronological; 4-6 bullets per role, rewritten to align with the JD role and title)
 - Education
-- Certifications (only if found in resume or JD)
-
-⚠️ Be strict about using **specific tools, methods, platforms, and measurable impact** from the JD. Do not generalize. Do not invent projects, but you may refine existing points to better match the JD.
+- Certifications (if in resume or JD)
 
 Resume Content:
 {text}
