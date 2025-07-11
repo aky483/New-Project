@@ -1,0 +1,10 @@
+streamlit
+PyPDF2
+google.generativeai
+python-dotenv
+bs4
+re
+plotly.graph_objects
+json
+docx
+io
