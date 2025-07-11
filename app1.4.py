@@ -17,9 +17,6 @@ genai.configure(
     client_options={"api_endpoint": "generativelanguage.googleapis.com"}
 )
 
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
 # Function to generate response from Gemini
 def get_gemini_response(prompt):
     model = genai.GenerativeModel('gemini-2.5-flash')
