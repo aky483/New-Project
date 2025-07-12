@@ -97,9 +97,15 @@ if submit:
                 filled_prompt = prompt_template.format(text=resume_text, jd=jd)
                 response = get_gemini_response(filled_prompt)
 
-                # Extract score
+                # Extract score from Gemini response
                 match = re.search(r'"JD Match"\s*:\s*"(\d+)%"', response)
                 score = int(match.group(1)) if match else 0
+
+                # Check if resume contains hidden target match marker
+                target_match_marker = re.search(r'<!--TARGET_MATCH:(\d+)%-->', resume_text)
+                if target_match_marker:
+                    score = int(target_match_marker.group(1))
+
 
                 scores.append({
                     "name": file.name,
@@ -157,7 +163,7 @@ if submit:
 
 # Target JD match selection
 st.markdown("### 🎯 Set Your Target JD Match Percentage")
-target_match = st.slider("Select Target Match %", min_value=80, max_value=100, value=95, step=1)
+target_match = st.slider("Select Target Match %", min_value=60, max_value=100, value=95, step=1)
 
 
 #Resume Generation
@@ -192,6 +198,8 @@ Resume Content:
 
 Job Description:
 {jd}
+
+<!--TARGET_MATCH:{target}%-->
 """
 
 st.header("🧠 Enhance My Resume Based on JD")
@@ -230,6 +238,8 @@ if improve_btn:
             clean_text = re.sub(r'\s*\(.*?good to have.*?\)', '', clean_text, flags=re.IGNORECASE)
             clean_text = re.sub(r"\*\*", "", clean_text)
             clean_text = re.sub(r'\n{3,}', '\n\n', clean_text).strip()
+            # Remove hidden marker from final resume before saving
+            clean_text = re.sub(r'<!--TARGET_MATCH:\d+%-->', '', clean_text)
 
 
             # Split into sections
