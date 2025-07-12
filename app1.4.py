@@ -170,7 +170,7 @@ Your job is to:
    - Emphasize **tools, platforms, pipelines, databases, programming, and architecture** relevant to the target role.
    - Add **measurable outcomes and business impact** wherever possible.
 
-🚫 Do NOT fabricate experience — just reframe existing work to better align with the JD.
+Fabricate work experience to best align with the JD.
 ✅ You may upgrade job titles if the responsibilities/tools used justify it.
 
 Format the resume like this (plain text, no tables/icons):
