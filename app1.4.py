@@ -155,6 +155,10 @@ if submit:
     else:
         st.warning("Please upload at least one resume and provide a job description.")
 
+# Target JD match selection
+st.markdown("### 🎯 Set Your Target JD Match Percentage")
+target_match = st.slider("Select Target Match %", min_value=80, max_value=100, value=95, step=1)
+
 
 #Resume Generation
 resume_improvement_prompt = """
@@ -170,8 +174,10 @@ Your job is to:
    - Emphasize **tools, platforms, pipelines, databases, programming, and architecture** relevant to the target role.
    - Add **measurable outcomes and business impact** wherever possible.
 
-Fabricate work experience to best align with the JD.
+Fabricate work experience to better align with the JD.
 ✅ You may upgrade job titles if the responsibilities/tools used justify it.
+
+Your goal is to improve this resume to achieve a **{target}% ATS match** with the JD.
 
 Format the resume like this (plain text, no tables/icons):
 - Name
@@ -187,6 +193,7 @@ Resume Content:
 Job Description:
 {jd}
 """
+
 st.header("🧠 Enhance My Resume Based on JD")
 
 uploaded_resume = st.file_uploader("Upload Your Existing Resume (PDF or Word)", type=["pdf", "docx"], key="resume_improve")
@@ -209,7 +216,7 @@ if improve_btn:
                 resume_text = ""
 
             # Format prompt
-            final_prompt = resume_improvement_prompt.format(text=resume_text, jd=jd_input)
+            final_prompt = resume_improvement_prompt.format(text=resume_text, jd=jd_input, target=target_match)
 
             # Get improved resume text from Gemini
             improved_resume_text = get_gemini_response(final_prompt)
