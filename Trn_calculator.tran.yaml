@@ -1,0 +1,81 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    PRODUCTS:
+      type: "table-input"
+      parameters:
+        componentName: "PRODUCTS"
+        database: "DEMODATABASE"
+        schema: "DEMOSCHEMA"
+        targetTable: "SALES_DATA"
+        columnNames:
+        - "ORDER_ID"
+        - "ORDER_DATE"
+        - "SHIP_DATE"
+        - "SHIP_MODE"
+        - "CUSTOMER_NAME"
+        - "SEGMENT"
+        - "STATE"
+        - "COUNTRY"
+        - "MARKET"
+        - "REGION"
+        - "PRODUCT_ID"
+        - "CATEGORY"
+        - "SUB_CATEGORY"
+        - "PRODUCT_NAME"
+        - "SALES"
+        - "QUANTITY"
+        - "DISCOUNT"
+        - "PROFIT"
+        - "SHIPPING_COST"
+        - "ORDER_PRIORITY"
+        - "YEAR"
+        timeOffset:
+    Calculator:
+      type: "calculator"
+      sources:
+      - "PRODUCTS"
+      parameters:
+        componentName: "Calculator"
+        includeInputColumns: "No"
+        calculations:
+        - - "YEAR(\"ORDER_DATE\")"
+          - "Order_Year"
+        - - "MONTH(\"ORDER_DATE\")"
+          - "Order_Month"
+        - - "DAY(\"ORDER_DATE\")"
+          - "Order_Day"
+        - - "\"CATEGORY\""
+          - "Category"
+        - - "\"SALES\""
+          - "Sales"
+    Aggregate:
+      type: "aggregate"
+      sources:
+      - "Calculator"
+      parameters:
+        componentName: "Aggregate"
+        groupings:
+        - "Category"
+        aggregations:
+        - - "Sales"
+          - "Max"
+        groupingType: "Group By"
+design:
+  components:
+    PRODUCTS:
+      position:
+        x: 0
+        "y": 0
+      tempMetlId: 1
+    Calculator:
+      position:
+        x: 160
+        "y": 0
+      tempMetlId: 2
+    Aggregate:
+      position:
+        x: 320
+        "y": 0
+      tempMetlId: 3
