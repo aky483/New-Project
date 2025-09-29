@@ -1,0 +1,86 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Fixed Flow 0:
+      type: "fixed-flow"
+      parameters:
+        componentName: "Fixed Flow 0"
+        columns:
+        - - "fan_status_code"
+          - "NUMBER"
+          - "6"
+          - "0"
+        - - "status"
+          - "VARCHAR"
+          - ""
+          - ""
+        values:
+        - - "1001"
+          - "normal"
+        - - "1002"
+          - "malfunctioning"
+        - - "1003"
+          - "unpowered"
+        - - "-1"
+          - "Unknown"
+    dim_fan_status:
+      type: "table-update"
+      sources:
+      - "Fixed Flow 0"
+      parameters:
+        componentName: "dim_fan_status"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_fan_status"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"fan_status_code\" = \"input\".\"fan_status_code\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "status"
+          - "status"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "fan_status_code"
+          - "fan_status_code"
+        - - "status"
+          - "status"
+design:
+  components:
+    Fixed Flow 0:
+      position:
+        x: 400
+        "y": 272
+      tempMetlId: 1379
+    dim_fan_status:
+      position:
+        x: 640
+        "y": 272
+      tempMetlId: 1380
+  notes:
+    "1378":
+      position:
+        x: 300
+        "y": 134
+      size:
+        height: 91
+        width: 170
+      theme: "green"
+      content: |-
+        The source for this did not exist in the Data Vault model because it was in the semi-structured satellite tables.
+        So the fixed master data is here
+    "1377":
+      position:
+        x: 562
+        "y": 333
+      size:
+        height: 40
+        width: 177
+      theme: "green"
+      content: "This is a \"type 1\" update"

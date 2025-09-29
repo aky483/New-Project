@@ -1,0 +1,51 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create File Format banking_csv"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create File Format banking_csv:
+      type: "create-file-format"
+      skipped: false
+      parameters:
+        componentName: "Create File Format banking_csv"
+        createReplace: "Create if not exists"
+        database: "BANKING"
+        schema: "BANKING_SCHEMA"
+        fileFormatName: "banking_csv_file_format"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ","
+        skipHeader: "1"
+        skipBlankLines: "True"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace2: "False"
+        fieldOptionallyEnclosed: "\\042"
+        nullIf2:
+        errorOnColumnCountMismatch: "True"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+design:
+  components:
+    Start 0:
+      position:
+        x: -368
+        "y": -16
+      tempMetlId: 7862
+    Create File Format banking_csv:
+      position:
+        x: -210
+        "y": -14
+      tempMetlId: 7867

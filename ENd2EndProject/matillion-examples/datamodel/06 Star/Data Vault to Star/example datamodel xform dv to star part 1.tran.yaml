@@ -1,0 +1,146 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    s_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "s_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "s_equipment"
+        columnNames:
+        - "hashkey"
+        - "load_timestamp"
+        - "record_source"
+        - "latest_from_source"
+        - "hashdiff"
+        - "context"
+        timeOffset: ""
+    h_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "h_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "h_equipment"
+        columnNames:
+        - "hashkey"
+        - "equipment_id"
+        - "load_timestamp"
+        - "record_source"
+        timeOffset: ""
+    Join 0:
+      type: "join"
+      sources:
+      - "h_equipment"
+      - "s_equipment"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "h_equipment"
+        mainTableAlias: "h"
+        joins:
+        - - "s_equipment"
+          - "s"
+          - "Inner"
+        joinExpressions:
+        - - "\"h\".\"hashkey\" = \"s\".\"hashkey\" AND \"s\".\"latest_from_source\"\
+            \ = TRUE"
+          - "h_Inner_s"
+        columnMappings:
+        - - "h.hashkey"
+          - "h_hashkey"
+        - - "h.equipment_id"
+          - "equipment_id"
+        - - "h.load_timestamp"
+          - "h_load_timestamp"
+        - - "h.record_source"
+          - "h_record_source"
+        - - "s.hashkey"
+          - "s_hashkey"
+        - - "s.load_timestamp"
+          - "s_load_timestamp"
+        - - "s.record_source"
+          - "s_record_source"
+        - - "s.latest_from_source"
+          - "latest_from_source"
+        - - "s.hashdiff"
+          - "hashdiff"
+        - - "s.context"
+          - "context"
+    dim_equipment:
+      type: "table-update"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "dim_equipment"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_equipment"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"equipment_id\" = \"input\".\"equipment_id\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "name"
+          - "name"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "equipment_id"
+          - "equipment_id"
+        - - "name"
+          - "name"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "No"
+        calculations:
+        - - "\"equipment_id\""
+          - "equipment_id"
+        - - "(\"context\":\"name\")::VARCHAR"
+          - "name"
+design:
+  components:
+    s_equipment:
+      position:
+        x: 464
+        "y": 160
+      tempMetlId: 1367
+    h_equipment:
+      position:
+        x: 336
+        "y": 288
+      tempMetlId: 1368
+    Join 0:
+      position:
+        x: 464
+        "y": 288
+      tempMetlId: 1369
+    dim_equipment:
+      position:
+        x: 816
+        "y": 288
+      tempMetlId: 1370
+    Calculator 0:
+      position:
+        x: 588
+        "y": 289
+      tempMetlId: 1371
+  notes:
+    "1366":
+      position:
+        x: 739
+        "y": 352
+      size:
+        height: 40
+        width: 177
+      theme: "green"
+      content: "This is a \"type 1\" update"

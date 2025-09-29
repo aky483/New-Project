@@ -1,0 +1,247 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    fact_bubble_event:
+      type: "table-input"
+      parameters:
+        componentName: "fact_bubble_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "fact_bubble_event"
+        columnNames:
+        - "id"
+        - "ts"
+        - "equipment_key"
+        - "fan_status_key"
+        - "date_key"
+        - "hour_key"
+        timeOffset: ""
+    dim_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "dim_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_fan_status"
+        columnNames:
+        - "fan_status_key"
+        - "fan_status_code"
+        - "status"
+        timeOffset: ""
+    dim_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "dim_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_equipment"
+        columnNames:
+        - "equipment_key"
+        - "equipment_id"
+        - "name"
+        timeOffset: ""
+    Join 0:
+      type: "join"
+      sources:
+      - "fact_bubble_event"
+      - "dim_fan_status"
+      - "dim_equipment"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "fact_bubble_event"
+        mainTableAlias: "f"
+        joins:
+        - - "dim_fan_status"
+          - "df"
+          - "Inner"
+        - - "dim_equipment"
+          - "de"
+          - "Inner"
+        joinExpressions:
+        - - "\"f\".\"fan_status_key\" = \"df\".\"fan_status_key\""
+          - "f_Inner_df"
+        - - "\"f\".\"equipment_key\" = \"de\".\"equipment_key\""
+          - "f_Inner_de"
+        columnMappings:
+        - - "f.id"
+          - "id"
+        - - "f.ts"
+          - "ts"
+        - - "f.equipment_key"
+          - "equipment_key"
+        - - "f.fan_status_key"
+          - "fan_status_key"
+        - - "f.date_key"
+          - "date_key"
+        - - "f.hour_key"
+          - "hour_key"
+        - - "df.fan_status_code"
+          - "fan_status_code"
+        - - "df.status"
+          - "fan_status"
+        - - "de.equipment_id"
+          - "equipment_id"
+        - - "de.name"
+          - "equipment_name"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - |-
+            TIMESTAMPDIFF(millisecond,
+                          LAG("ts", 1) OVER (PARTITION BY "equipment_key" ORDER BY "ts"),
+                          "ts")
+            / 1000.0
+          - "bubble_frequency_s"
+    Aggregate 0:
+      type: "aggregate"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Aggregate 0"
+        groupings:
+        - "date_key"
+        - "hour_key"
+        aggregations:
+        - - "bubble_frequency_s"
+          - "Average"
+        groupingType: "Group By"
+    Rank 0:
+      type: "rank"
+      sources:
+      - "Aggregate 0"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        orderingWithinPartitions:
+        - - "date_key"
+          - "Asc"
+        - - "hour_key"
+          - "Asc"
+        functions:
+        - - "Row Number"
+          - "hour_number"
+    Rewrite agg_rate:
+      type: "rewrite-table"
+      sources:
+      - "Add natural log"
+      parameters:
+        componentName: "Rewrite agg_rate"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "agg_rate"
+        orderBy:
+    Add natural log:
+      type: "calculator"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "Add natural log"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "LN(60.0 / \"avg_bubble_frequency_s\")"
+          - "ln_bpm"
+design:
+  components:
+    fact_bubble_event:
+      position:
+        x: 370
+        "y": 269
+      tempMetlId: 1452
+    dim_fan_status:
+      position:
+        x: 475
+        "y": 156
+      tempMetlId: 1453
+    dim_equipment:
+      position:
+        x: 482
+        "y": 381
+      tempMetlId: 1454
+    Join 0:
+      position:
+        x: 546
+        "y": 269
+      tempMetlId: 1455
+    Calculator 0:
+      position:
+        x: 674
+        "y": 269
+      tempMetlId: 1456
+    Aggregate 0:
+      position:
+        x: 802
+        "y": 269
+      tempMetlId: 1457
+    Rank 0:
+      position:
+        x: 930
+        "y": 269
+      tempMetlId: 1458
+    Rewrite agg_rate:
+      position:
+        x: 1203
+        "y": 273
+      tempMetlId: 1459
+    Add natural log:
+      position:
+        x: 1059
+        "y": 273
+      tempMetlId: 1460
+  notes:
+    "1451":
+      position:
+        x: 1134
+        "y": 122
+      size:
+        height: 200
+        width: 339
+      theme: "green"
+      content: |-
+        This is an "Aggregate fact table" – created by grouping an existing Fact table on a smaller number of Dimensions.
+
+        It is fully recreated every time, using a Rewrite Table component.
+
+        More information on Star Schema design at [https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion](https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion)
+    "1407":
+      position:
+        x: 152
+        "y": 78
+      size:
+        height: 115
+        width: 225
+      theme: "green"
+      content: |-
+        Run this job after completing 06 Star
+
+        You should get the same results whether you used the 3NF or the Data Vault path
+
+        This job aggregates Star Schema data for statistical analysis
+    "1406":
+      position:
+        x: 731
+        "y": 168
+      size:
+        height: 192
+        width: 147
+      theme: "green"
+      content: "Aggregation takes the data volumes down from 144,560 rows to 176 rows"
+    "1405":
+      position:
+        x: 931
+        "y": 374
+      size:
+        height: 140
+        width: 294
+      theme: "green"
+      content: |-
+        This is the data used for the statistical analysis in [https://www.matillion.com/resources/developer-relations/analysis-of-exponential-decay-using-matillion-etl-for-delta-lake-on-databricks](https://www.matillion.com/resources/developer-relations/analysis-of-exponential-decay-using-matillion-etl-for-delta-lake-on-databricks)
+
+        The aggregated data is an exponential decay, whereas the natural log is a straight line that can be used with linear regression

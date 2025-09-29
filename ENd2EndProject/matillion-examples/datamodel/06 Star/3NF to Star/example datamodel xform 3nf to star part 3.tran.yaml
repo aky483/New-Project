@@ -1,0 +1,261 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    norm_bubble_event:
+      type: "table-input"
+      parameters:
+        componentName: "norm_bubble_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_bubble_event"
+        columnNames:
+        - "id"
+        - "equipment_id"
+        - "ts"
+        timeOffset: ""
+    norm_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "norm_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_equipment"
+        columnNames:
+        - "equipment_id"
+        - "name"
+        - "fan_status_code"
+        timeOffset: ""
+    Join 0:
+      type: "join"
+      sources:
+      - "norm_equipment"
+      - "norm_fan_status"
+      - "norm_bubble_event"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "norm_bubble_event"
+        mainTableAlias: "e"
+        joins:
+        - - "norm_equipment"
+          - "q"
+          - "Inner"
+        - - "norm_fan_status"
+          - "fan"
+          - "Inner"
+        joinExpressions:
+        - - "\"e\".\"equipment_id\" = \"q\".\"equipment_id\""
+          - "e_Inner_q"
+        - - "\"q\".\"fan_status_code\" = \"fan\".\"fan_status_code\""
+          - "e_Inner_fan"
+        columnMappings:
+        - - "e.id"
+          - "id"
+        - - "e.equipment_id"
+          - "equipment_id"
+        - - "e.ts"
+          - "ts"
+        - - "fan.name"
+          - "fan_status_code"
+    dim_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "dim_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_equipment"
+        columnNames:
+        - "equipment_key"
+        - "equipment_id"
+        - "name"
+        timeOffset: ""
+    dim_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "dim_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_fan_status"
+        columnNames:
+        - "fan_status_key"
+        - "fan_status_code"
+        - "status"
+        timeOffset: ""
+    Equip Join:
+      type: "join"
+      sources:
+      - "Join 0"
+      - "dim_equipment"
+      parameters:
+        componentName: "Equip Join"
+        mainTable: "Join 0"
+        mainTableAlias: "f"
+        joins:
+        - - "dim_equipment"
+          - "e"
+          - "Inner"
+        joinExpressions:
+        - - "\"f\".\"equipment_id\" = \"e\".\"equipment_id\""
+          - "f_Inner_e"
+        columnMappings:
+        - - "f.id"
+          - "id"
+        - - "f.ts"
+          - "ts"
+        - - "f.fan_status_code"
+          - "fan_status_code"
+        - - "e.equipment_key"
+          - "equipment_key"
+    Fan Status Join:
+      type: "join"
+      sources:
+      - "Equip Join"
+      - "dim_fan_status"
+      parameters:
+        componentName: "Fan Status Join"
+        mainTable: "Equip Join"
+        mainTableAlias: "f"
+        joins:
+        - - "dim_fan_status"
+          - "x"
+          - "Inner"
+        joinExpressions:
+        - - "\"f\".\"fan_status_code\" = \"x\".\"status\""
+          - "f_Inner_x"
+        columnMappings:
+        - - "f.id"
+          - "id"
+        - - "f.ts"
+          - "ts"
+        - - "f.equipment_key"
+          - "equipment_key"
+        - - "x.fan_status_key"
+          - "fan_status_key"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Fan Status Join"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "CAST(TO_CHAR(\"ts\", 'YYYYMMDD') AS INTEGER)"
+          - "date_key"
+        - - "CAST(TO_CHAR(\"ts\", 'HH24') AS INTEGER)"
+          - "hour_key"
+    fact_bubble_event:
+      type: "table-update"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "fact_bubble_event"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "fact_bubble_event"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"id\" = \"input\".\"id\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "ts"
+          - "ts"
+        - - "equipment_key"
+          - "equipment_key"
+        - - "fan_status_key"
+          - "fan_status_key"
+        - - "date_key"
+          - "date_key"
+        - - "hour_key"
+          - "hour_key"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "id"
+          - "id"
+        - - "ts"
+          - "ts"
+        - - "equipment_key"
+          - "equipment_key"
+        - - "fan_status_key"
+          - "fan_status_key"
+        - - "date_key"
+          - "date_key"
+        - - "hour_key"
+          - "hour_key"
+    norm_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "norm_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_fan_status"
+        columnNames:
+        - "fan_status_code"
+        - "name"
+        timeOffset: ""
+design:
+  components:
+    norm_bubble_event:
+      position:
+        x: 292
+        "y": 240
+      tempMetlId: 1334
+    norm_equipment:
+      position:
+        x: 368
+        "y": 128
+      tempMetlId: 1335
+    Join 0:
+      position:
+        x: 512
+        "y": 240
+      tempMetlId: 1336
+    dim_equipment:
+      position:
+        x: 672
+        "y": 128
+      tempMetlId: 1337
+    dim_fan_status:
+      position:
+        x: 800
+        "y": 128
+      tempMetlId: 1338
+    Equip Join:
+      position:
+        x: 676
+        "y": 240
+      tempMetlId: 1339
+    Fan Status Join:
+      position:
+        x: 800
+        "y": 240
+      tempMetlId: 1340
+    Calculator 0:
+      position:
+        x: 944
+        "y": 240
+      tempMetlId: 1341
+    fact_bubble_event:
+      position:
+        x: 1120
+        "y": 240
+      tempMetlId: 1342
+    norm_fan_status:
+      position:
+        x: 375
+        "y": 347
+      tempMetlId: 1343
+  notes:
+    "1333":
+      position:
+        x: 617
+        "y": 72
+      size:
+        height: 221
+        width: 376
+      theme: "green"
+      content: "Dimension joins and derivations"

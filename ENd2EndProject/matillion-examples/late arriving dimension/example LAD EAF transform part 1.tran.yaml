@@ -1,0 +1,284 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Rename 2:
+      type: "rename"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Rename 2"
+        columnMapping:
+        - - "dep_date"
+          - "dep_date"
+        - - "dep_time"
+          - "dep_time"
+        - - "tailnum"
+          - "tailnum"
+        - - "flightnum"
+          - "flightnum"
+        - - "origin"
+          - "origin"
+        - - "dest"
+          - "dest"
+    Cast 2:
+      type: "convert-type"
+      sources:
+      - "Rename 2"
+      parameters:
+        componentName: "Cast 2"
+        conversions:
+        - - "dep_time"
+          - "VARCHAR"
+          - "5"
+          - ""
+        - - "tailnum"
+          - "VARCHAR"
+          - "40"
+          - ""
+        - - "flightnum"
+          - "VARCHAR"
+          - "40"
+          - ""
+        - - "origin"
+          - "VARCHAR"
+          - "5"
+          - ""
+        - - "dest"
+          - "VARCHAR"
+          - "5"
+          - ""
+    Cast Dim Datatypes:
+      type: "convert-type"
+      sources:
+      - "Unite 0"
+      parameters:
+        componentName: "Cast Dim Datatypes"
+        conversions:
+        - - "iata_code"
+          - "VARCHAR"
+          - "5"
+          - ""
+    Rewrite stg_iata_code:
+      type: "rewrite-table"
+      sources:
+      - "Cast Dim Datatypes"
+      parameters:
+        componentName: "Rewrite stg_iata_code"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_iata_code"
+    Rewrite stg_flight:
+      type: "rewrite-table"
+      sources:
+      - "Cast 2"
+      parameters:
+        componentName: "Rewrite stg_flight"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_flight"
+    New Flight Records:
+      type: "table-input"
+      parameters:
+        componentName: "New Flight Records"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_flight_fact_sample"
+        columnNames:
+        - "yyyy"
+        - "mm"
+        - "dayofmonth"
+        - "tailnum"
+        - "flightnum"
+        - "deptime"
+        - "crsdeptime"
+        - "origin"
+        - "dest"
+        timeOffset: ""
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "New Flight Records"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "TO_DATE(\"yyyy\" || '-' || \"mm\" || '-' || \"dayofmonth\", 'YYYY-MM-DD')"
+          - "dep_date"
+        - - "COALESCE(\"deptime\", \"crsdeptime\")"
+          - "dep_time"
+    Rank 0:
+      type: "rank"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "dep_date"
+        - "dep_time"
+        - "tailnum"
+        - "flightnum"
+        - "origin"
+        - "dest"
+        orderingWithinPartitions:
+        - - "yyyy"
+          - "Asc"
+        functions:
+        - - "Row Number"
+          - "dup_seq"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "dup_seq"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+    Rename origin:
+      type: "rename"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Rename origin"
+        columnMapping:
+        - - "origin"
+          - "iata_code"
+    Rename dest:
+      type: "rename"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Rename dest"
+        columnMapping:
+        - - "dest"
+          - "iata_code"
+    Unite 0:
+      type: "unite"
+      sources:
+      - "Rename origin"
+      - "Rename dest"
+      parameters:
+        componentName: "Unite 0"
+        method: "All Columns"
+        castTypes: "Yes"
+        addSourceComponentColumn: "No"
+        removeDuplicates: "Yes"
+design:
+  components:
+    Rename 2:
+      position:
+        x: 1152
+        "y": 432
+      tempMetlId: 1001
+    Cast 2:
+      position:
+        x: 1280
+        "y": 432
+      tempMetlId: 1002
+    Cast Dim Datatypes:
+      position:
+        x: 1456
+        "y": 256
+      tempMetlId: 1003
+    Rewrite stg_iata_code:
+      position:
+        x: 1600
+        "y": 256
+      tempMetlId: 1004
+    Rewrite stg_flight:
+      position:
+        x: 1400
+        "y": 439
+      tempMetlId: 1005
+    New Flight Records:
+      position:
+        x: 400
+        "y": 256
+      tempMetlId: 1044
+    Calculator 0:
+      position:
+        x: 588
+        "y": 255
+      tempMetlId: 1045
+    Rank 0:
+      position:
+        x: 809
+        "y": 250
+      tempMetlId: 1046
+    Filter 0:
+      position:
+        x: 940
+        "y": 255
+      tempMetlId: 1047
+    Rename origin:
+      position:
+        x: 1152
+        "y": 192
+      tempMetlId: 1048
+    Rename dest:
+      position:
+        x: 1152
+        "y": 320
+      tempMetlId: 1049
+    Unite 0:
+      position:
+        x: 1312
+        "y": 256
+      tempMetlId: 1050
+  notes:
+    "1039":
+      position:
+        x: 764
+        "y": 178
+      size:
+        height: 141
+        width: 227
+      theme: "white"
+      content: "Remove duplicates"
+    "1043":
+      position:
+        x: 1262
+        "y": 175
+      size:
+        height: 135
+        width: 106
+      theme: "green"
+      content: "Using the database to remove duplicate IATA codes"
+    "1042":
+      position:
+        x: 1339
+        "y": 368
+      size:
+        height: 110
+        width: 231
+      theme: "green"
+      content: |-
+        All the new candidate fact records.
+        These are all *potential* early arriving facts.
+    "1041":
+      position:
+        x: 1519
+        "y": 146
+      size:
+        height: 175
+        width: 162
+      theme: "green"
+      content: |-
+        All the distinct airport codes - either departure or arrival.
+        These are all *potential* late arriving dimensions.
+    "1040":
+      position:
+        x: 511
+        "y": 178
+      size:
+        height: 141
+        width: 200
+      theme: "white"
+      content: "Derivations"

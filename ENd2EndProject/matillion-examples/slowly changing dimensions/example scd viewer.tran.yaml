@@ -1,0 +1,232 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    dim_worldclockapi_type1:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclockapi_type1"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type1"
+        columnNames:
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        timeOffset: ""
+    dim_worldclockapi_type2:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclockapi_type2"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type2"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "ValidFrom"
+        - "ValidTo"
+        - "Version"
+        - "CurrentFlag"
+        timeOffset: ""
+    dim_worldclock_virtual_type3:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclock_virtual_type3"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclock_virtual_type3"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "PriorDateTime"
+        - "PriorFileTime"
+        - "PriorDayOfTheWeek"
+        - "ValidFrom"
+        - "ValidTo"
+        - "Version"
+        - "CurrentFlag"
+        timeOffset: ""
+    dim_worldclock_virtual_type6:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclock_virtual_type6"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclock_virtual_type6"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "current_currentDateTime"
+        - "current_currentFileTime"
+        - "current_dayOfTheWeek"
+        - "ValidFrom"
+        - "ValidTo"
+        - "Version"
+        - "CurrentFlag"
+        timeOffset: ""
+    dim_worldclock_virtual_type1:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclock_virtual_type1"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclock_virtual_type1"
+        columnNames:
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        timeOffset: ""
+    dim_worldclock_virtual_type2:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclock_virtual_type2"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclock_virtual_type2"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "ValidFrom"
+        - "ValidTo"
+        - "Version"
+        - "CurrentFlag"
+        timeOffset: ""
+    norm_worldclockapi_history:
+      type: "table-input"
+      parameters:
+        componentName: "norm_worldclockapi_history"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_worldclockapi_history"
+        columnNames:
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        timeOffset: ""
+design:
+  components:
+    dim_worldclockapi_type1:
+      position:
+        x: 304
+        "y": 272
+      tempMetlId: 1685
+    dim_worldclockapi_type2:
+      position:
+        x: 528
+        "y": 272
+      tempMetlId: 1686
+    dim_worldclock_virtual_type3:
+      position:
+        x: 752
+        "y": 432
+      tempMetlId: 1687
+    dim_worldclock_virtual_type6:
+      position:
+        x: 976
+        "y": 432
+      tempMetlId: 1688
+    dim_worldclock_virtual_type1:
+      position:
+        x: 304
+        "y": 432
+      tempMetlId: 1689
+    dim_worldclock_virtual_type2:
+      position:
+        x: 528
+        "y": 432
+      tempMetlId: 1690
+    norm_worldclockapi_history:
+      position:
+        x: 96
+        "y": 432
+      tempMetlId: 1691
+  notes:
+    "1679":
+      position:
+        x: 451
+        "y": 208
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The manually-maintained Type 2 dimension"
+    "1678":
+      position:
+        x: 229
+        "y": 208
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The manually-maintained Type 1 dimension"
+    "1677":
+      position:
+        x: 191
+        "y": 117
+      size:
+        height: 42
+        width: 906
+      theme: "green"
+      content: "This is a convenience job, just for viewing the data using the Sample\
+        \ tab"
+    "1684":
+      position:
+        x: 22
+        "y": 361
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The backing table for the virtualized dimensions"
+    "1683":
+      position:
+        x: 452
+        "y": 360
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The virtualized Type 2 dimension"
+    "1682":
+      position:
+        x: 230
+        "y": 360
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The virtualized Type 1 dimension"
+    "1681":
+      position:
+        x: 904
+        "y": 360
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The virtualized Type 6 dimension"
+    "1680":
+      position:
+        x: 674
+        "y": 361
+      size:
+        height: 112
+        width: 146
+      theme: "yellow"
+      content: "The virtualized Type 3 dimension"

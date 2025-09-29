@@ -1,0 +1,268 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    ods_iot_event:
+      type: "table-input"
+      parameters:
+        componentName: "ods_iot_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "ods_iot_event"
+        columnNames:
+        - "ts"
+        - "equipment"
+        - "temperature"
+        timeOffset: ""
+    norm_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "norm_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_fan_status"
+        columnNames:
+        - "fan_status_code"
+        - "name"
+        timeOffset: ""
+    norm_bubble_event:
+      type: "table-update"
+      sources:
+      - "ods_iot_event"
+      parameters:
+        componentName: "norm_bubble_event"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_bubble_event"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"equipment_id\" = \"input\".\"equipment\" AND \"target\"\
+            .\"ts\" = \"input\".\"ts\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "ts"
+          - "ts"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "equipment"
+          - "equipment_id"
+        - - "ts"
+          - "ts"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "ods_iot_event"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "equipment"
+          - "equipment"
+        includeInputColumns: "No"
+    Distinct 0:
+      type: "distinct"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Distinct 0"
+        columns:
+        - "equipment"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Distinct 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "No"
+        calculations:
+        - - "\"equipment\""
+          - "id"
+        - - "'Unknown'"
+          - "name"
+        - - "'normal' /* Have to hardcode this value because it is not in the data\
+            \ */"
+          - "fan_status"
+    Join 0:
+      type: "join"
+      sources:
+      - "Calculator 0"
+      - "norm_fan_status"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "Calculator 0"
+        mainTableAlias: "data"
+        joins:
+        - - "norm_fan_status"
+          - "fan"
+          - "Left"
+        joinExpressions:
+        - - "\"data\".\"fan_status\" = \"fan\".\"name\""
+          - "data_Left_fan"
+        columnMappings:
+        - - "data.id"
+          - "id"
+        - - "data.name"
+          - "name"
+        - - "fan.fan_status_code"
+          - "fan_status_code"
+    Calculator 1:
+      type: "calculator"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Calculator 1"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "NVL(\"fan_status_code\", -1)"
+          - "fan_staus_code_with_default"
+    Rename 1:
+      type: "rename"
+      sources:
+      - "Calculator 1"
+      parameters:
+        componentName: "Rename 1"
+        columnMapping:
+        - - "id"
+          - "equipment_id"
+        - - "name"
+          - "name"
+        - - "fan_staus_code_with_default"
+          - "fan_status_code"
+        includeInputColumns: "No"
+    norm_equipment:
+      type: "table-update"
+      sources:
+      - "Rename 1"
+      parameters:
+        componentName: "norm_equipment"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_equipment"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"equipment_id\" = \"input\".\"equipment_id\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "name"
+          - "name"
+        - - "fan_status_code"
+          - "fan_status_code"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "equipment_id"
+          - "equipment_id"
+        - - "name"
+          - "name"
+        - - "fan_status_code"
+          - "fan_status_code"
+design:
+  components:
+    ods_iot_event:
+      position:
+        x: 224
+        "y": 352
+      tempMetlId: 1228
+    norm_fan_status:
+      position:
+        x: 729
+        "y": 164
+      tempMetlId: 1229
+    norm_bubble_event:
+      position:
+        x: 377
+        "y": 436
+      tempMetlId: 1230
+    Rename 0:
+      position:
+        x: 377
+        "y": 276
+      tempMetlId: 1231
+    Distinct 0:
+      position:
+        x: 473
+        "y": 276
+      tempMetlId: 1232
+    Calculator 0:
+      position:
+        x: 569
+        "y": 276
+      tempMetlId: 1233
+    Join 0:
+      position:
+        x: 729
+        "y": 276
+      tempMetlId: 1234
+    Calculator 1:
+      position:
+        x: 937
+        "y": 276
+      tempMetlId: 1235
+    Rename 1:
+      position:
+        x: 1033
+        "y": 276
+      tempMetlId: 1236
+    norm_equipment:
+      position:
+        x: 1161
+        "y": 276
+      tempMetlId: 1237
+  notes:
+    "1227":
+      position:
+        x: 896
+        "y": 176
+      size:
+        height: 53
+        width: 177
+      theme: "green"
+      content: "This is in case the left-join failed"
+    "1226":
+      position:
+        x: 671
+        "y": 101
+      size:
+        height: 252
+        width: 148
+      theme: "green"
+      content: |-
+        Look up the fan status code.
+        Note this is a **left** join
+    "1225":
+      position:
+        x: 1109
+        "y": 167
+      size:
+        height: 71
+        width: 123
+      theme: "green"
+      content: "Not expecting many UPDATEs at this point, but they are handled if\
+        \ they do happen"
+    "1224":
+      position:
+        x: 453
+        "y": 415
+      size:
+        height: 50
+        width: 176
+      theme: "green"
+      content: "This is a simple MERGE. It performs an idempotent change to the 3NF\
+        \ table."
+    "1223":
+      position:
+        x: 341
+        "y": 192
+      size:
+        height: 40
+        width: 278
+      theme: "green"
+      content: "This is similar to handling a late-arriving dimension"

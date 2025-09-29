@@ -1,0 +1,807 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "Setup for the Contingency Table example"
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Check variables:
+      type: "unknown-orchestration"
+      transitions:
+        success:
+        - "Create us_holiday_observance"
+        - "Create stg_training_flights"
+      skipped: false
+      parameters:
+        "1": "Check variables"
+        "2": "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        "3": "360"
+    Create us_holiday_observance:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Reference data 1988-2030"
+      skipped: false
+      parameters:
+        componentName: "Create us_holiday_observance"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "us_holiday_observance"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "CalendarDate"
+          - "DATE"
+          - ""
+          - ""
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "Observance"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create stg_training_flights:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "S3 Load 0"
+      skipped: false
+      parameters:
+        componentName: "Create stg_training_flights"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "stg_training_flights"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "flight_date"
+          - "DATE"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "departure_time"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "crs_departure_time"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "arrival_time"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "crs_arrival_time"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "carrier"
+          - "VARCHAR"
+          - "2"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "flight_number"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "actual_elapsed_time"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "airtime"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "origin"
+          - "VARCHAR"
+          - "3"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "destination"
+          - "VARCHAR"
+          - "3"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "distance_type"
+          - "VARCHAR"
+          - "10"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "distance"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "taxi_in"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "taxi_out"
+          - "NUMBER"
+          - "5"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Reference data 1988-2030:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Reference data 1988-2030"
+        sqlScript: |
+          INSERT INTO "${environment_database}"."${examples_schema}"."us_holiday_observance"
+          VALUES
+              ('1988-01-01', 'New Year''s Day'),
+              ('1988-01-18', 'Martin Luther King Day'),
+              ('1988-02-15', 'President''s Day'),
+              ('1988-05-30', 'Memorial Day'),
+              ('1988-07-04', 'Independence Day'),
+              ('1988-09-05', 'Labor Day'),
+              ('1988-10-10', 'Columbus Day'),
+              ('1988-11-11', 'Veterans Day'),
+              ('1988-11-24', 'Thanksgiving'),
+              ('1988-12-25', 'Christmas'),
+              ('1988-12-26', 'Christmas Observance'),
+              ('1989-01-01', 'New Year''s Day'),
+              ('1989-01-02', 'New Year''s Day Observance'),
+              ('1989-01-16', 'Martin Luther King Day'),
+              ('1989-02-20', 'President''s Day'),
+              ('1989-05-29', 'Memorial Day'),
+              ('1989-07-04', 'Independence Day'),
+              ('1989-09-04', 'Labor Day'),
+              ('1989-10-09', 'Columbus Day'),
+              ('1989-11-10', 'Veterans Day Observance'),
+              ('1989-11-11', 'Veterans Day'),
+              ('1989-11-23', 'Thanksgiving'),
+              ('1989-12-25', 'Christmas'),
+              ('1990-01-01', 'New Year''s Day'),
+              ('1990-01-15', 'Martin Luther King Day'),
+              ('1990-02-19', 'President''s Day'),
+              ('1990-05-28', 'Memorial Day'),
+              ('1990-07-04', 'Independence Day'),
+              ('1990-09-03', 'Labor Day'),
+              ('1990-10-08', 'Columbus Day'),
+              ('1990-11-11', 'Veterans Day'),
+              ('1990-11-12', 'Veterans Day Observance'),
+              ('1990-11-22', 'Thanksgiving'),
+              ('1990-12-25', 'Christmas'),
+              ('1991-01-01', 'New Year''s Day'),
+              ('1991-01-21', 'Martin Luther King Day'),
+              ('1991-02-18', 'President''s Day'),
+              ('1991-05-27', 'Memorial Day'),
+              ('1991-07-04', 'Independence Day'),
+              ('1991-09-02', 'Labor Day'),
+              ('1991-10-14', 'Columbus Day'),
+              ('1991-11-11', 'Veterans Day'),
+              ('1991-11-28', 'Thanksgiving'),
+              ('1991-12-25', 'Christmas'),
+              ('1992-01-01', 'New Year''s Day'),
+              ('1992-01-20', 'Martin Luther King Day'),
+              ('1992-02-17', 'President''s Day'),
+              ('1992-05-25', 'Memorial Day'),
+              ('1992-07-03', 'Independence Day Observance'),
+              ('1992-07-04', 'Independence Day'),
+              ('1992-09-07', 'Labor Day'),
+              ('1992-10-12', 'Columbus Day'),
+              ('1992-11-11', 'Veterans Day'),
+              ('1992-11-26', 'Thanksgiving'),
+              ('1992-12-25', 'Christmas'),
+              ('1993-01-01', 'New Year''s Day'),
+              ('1993-01-18', 'Martin Luther King Day'),
+              ('1993-02-15', 'President''s Day'),
+              ('1993-05-31', 'Memorial Day'),
+              ('1993-07-04', 'Independence Day'),
+              ('1993-07-05', 'Independence Day Observance'),
+              ('1993-09-06', 'Labor Day'),
+              ('1993-10-11', 'Columbus Day'),
+              ('1993-11-11', 'Veterans Day'),
+              ('1993-11-25', 'Thanksgiving'),
+              ('1993-12-24', 'Christmas Observance/Christmas Eve'),
+              ('1993-12-25', 'Christmas'),
+              ('1993-12-31', 'New Year''s Day Observance'),
+              ('1994-01-01', 'New Year''s Day'),
+              ('1994-01-17', 'Martin Luther King Day'),
+              ('1994-02-21', 'President''s Day'),
+              ('1994-05-30', 'Memorial Day'),
+              ('1994-07-04', 'Independence Day'),
+              ('1994-09-05', 'Labor Day'),
+              ('1994-10-10', 'Columbus Day'),
+              ('1994-11-11', 'Veterans Day'),
+              ('1994-11-24', 'Thanksgiving'),
+              ('1994-12-25', 'Christmas'),
+              ('1994-12-26', 'Christmas Observance'),
+              ('1995-01-01', 'New Year''s Day'),
+              ('1995-01-02', 'New Year''s Day Observance'),
+              ('1995-01-16', 'Martin Luther King Day'),
+              ('1995-02-20', 'President''s Day'),
+              ('1995-05-29', 'Memorial Day'),
+              ('1995-07-04', 'Independence Day'),
+              ('1995-09-04', 'Labor Day'),
+              ('1995-10-09', 'Columbus Day'),
+              ('1995-11-10', 'Veterans Day Observance'),
+              ('1995-11-11', 'Veterans Day'),
+              ('1995-11-23', 'Thanksgiving'),
+              ('1995-12-25', 'Christmas'),
+              ('1996-01-01', 'New Year''s Day'),
+              ('1996-01-15', 'Martin Luther King Day'),
+              ('1996-02-19', 'President''s Day'),
+              ('1996-05-27', 'Memorial Day'),
+              ('1996-07-04', 'Independence Day'),
+              ('1996-09-02', 'Labor Day'),
+              ('1996-10-14', 'Columbus Day'),
+              ('1996-11-11', 'Veterans Day'),
+              ('1996-11-28', 'Thanksgiving'),
+              ('1996-12-25', 'Christmas'),
+              ('1997-01-01', 'New Year''s Day'),
+              ('1997-01-20', 'Martin Luther King Day'),
+              ('1997-02-17', 'President''s Day'),
+              ('1997-05-26', 'Memorial Day'),
+              ('1997-07-04', 'Independence Day'),
+              ('1997-09-01', 'Labor Day'),
+              ('1997-10-13', 'Columbus Day'),
+              ('1997-11-11', 'Veterans Day'),
+              ('1997-11-27', 'Thanksgiving'),
+              ('1997-12-25', 'Christmas'),
+              ('1998-01-01', 'New Year''s Day'),
+              ('1998-01-19', 'Martin Luther King Day'),
+              ('1998-02-16', 'President''s Day Observance'),
+              ('1998-05-25', 'Memorial Day'),
+              ('1998-07-03', 'Independence Day Observance'),
+              ('1998-07-04', 'Independence Day'),
+              ('1998-09-07', 'Labor Day'),
+              ('1998-10-12', 'Columbus Day'),
+              ('1998-11-11', 'Veterans Day'),
+              ('1998-11-26', 'Thanksgiving'),
+              ('1998-12-25', 'Christmas'),
+              ('1999-01-01', 'New Year''s Day'),
+              ('1999-01-18', 'Martin Luther King Day'),
+              ('1999-02-15', 'President''s Day'),
+              ('1999-05-31', 'Memorial Day'),
+              ('1999-07-04', 'Independence Day'),
+              ('1999-07-05', 'Independence Day Observance'),
+              ('1999-09-06', 'Labor Day'),
+              ('1999-10-11', 'Columbus Day'),
+              ('1999-11-11', 'Veterans Day'),
+              ('1999-11-25', 'Thanksgiving'),
+              ('1999-12-24', 'Christmas Observance/Christmas Eve'),
+              ('1999-12-25', 'Christmas'),
+              ('1999-12-31', 'New Year''s Day Observance'),
+              ('2000-01-01', 'New Year''s Day'),
+              ('2000-01-17', 'Martin Luther King Day'),
+              ('2000-02-21', 'President''s Day'),
+              ('2000-05-29', 'Memorial Day'),
+              ('2000-07-04', 'Independence Day'),
+              ('2000-09-04', 'Labor Day'),
+              ('2000-10-09', 'Columbus Day'),
+              ('2000-11-10', 'Veterans Day Observance'),
+              ('2000-11-11', 'Veterans Day'),
+              ('2000-11-23', 'Thanksgiving'),
+              ('2000-12-25', 'Christmas'),
+              ('2001-01-01', 'New Year''s Day'),
+              ('2001-01-15', 'Martin Luther King Day'),
+              ('2001-02-19', 'President''s Day'),
+              ('2001-05-28', 'Memorial Day'),
+              ('2001-07-04', 'Independence Day'),
+              ('2001-09-03', 'Labor Day'),
+              ('2001-10-08', 'Columbus Day'),
+              ('2001-11-11', 'Veterans Day'),
+              ('2001-11-12', 'Veterans Day Observance'),
+              ('2001-11-22', 'Thanksgiving'),
+              ('2001-12-25', 'Christmas'),
+              ('2002-01-01', 'New Year''s Day'),
+              ('2002-01-21', 'Martin Luther King Day'),
+              ('2002-02-18', 'President''s Day'),
+              ('2002-05-27', 'Memorial Day'),
+              ('2002-07-04', 'Independence Day'),
+              ('2002-09-02', 'Labor Day'),
+              ('2002-10-14', 'Columbus Day'),
+              ('2002-11-11', 'Veterans Day'),
+              ('2002-11-28', 'Thanksgiving'),
+              ('2002-12-25', 'Christmas'),
+              ('2003-01-01', 'New Year''s Day'),
+              ('2003-01-20', 'Martin Luther King Day'),
+              ('2003-02-17', 'President''s Day'),
+              ('2003-05-26', 'Memorial Day'),
+              ('2003-07-04', 'Independence Day'),
+              ('2003-09-01', 'Labor Day'),
+              ('2003-10-13', 'Columbus Day'),
+              ('2003-11-11', 'Veterans Day'),
+              ('2003-11-27', 'Thanksgiving'),
+              ('2003-12-25', 'Christmas'),
+              ('2004-01-01', 'New Year''s Day'),
+              ('2004-01-19', 'Martin Luther King Day'),
+              ('2004-02-16', 'President''s Day Observance'),
+              ('2004-05-31', 'Memorial Day'),
+              ('2004-07-04', 'Independence Day'),
+              ('2004-07-05', 'Independence Day Observance'),
+              ('2004-09-06', 'Labor Day'),
+              ('2004-10-11', 'Columbus Day'),
+              ('2004-11-11', 'Veterans Day'),
+              ('2004-11-25', 'Thanksgiving'),
+              ('2004-12-24', 'Christmas Observance/Christmas Eve'),
+              ('2004-12-25', 'Christmas'),
+              ('2004-12-31', 'New Year''s Day Observance'),
+              ('2005-01-01', 'New Year''s Day'),
+              ('2005-01-17', 'Martin Luther King Day'),
+              ('2005-02-21', 'President''s Day'),
+              ('2005-05-30', 'Memorial Day'),
+              ('2005-07-04', 'Independence Day'),
+              ('2005-09-05', 'Labor Day'),
+              ('2005-10-10', 'Columbus Day'),
+              ('2005-11-11', 'Veterans Day'),
+              ('2005-11-24', 'Thanksgiving'),
+              ('2005-12-25', 'Christmas'),
+              ('2005-12-26', 'Christmas Observance'),
+              ('2006-01-01', 'New Year''s Day'),
+              ('2006-01-02', 'New Year''s Day Observance'),
+              ('2006-01-16', 'Martin Luther King Day'),
+              ('2006-02-20', 'President''s Day'),
+              ('2006-05-29', 'Memorial Day'),
+              ('2006-07-04', 'Independence Day'),
+              ('2006-09-04', 'Labor Day'),
+              ('2006-10-09', 'Columbus Day'),
+              ('2006-11-10', 'Veterans Day Observance'),
+              ('2006-11-11', 'Veterans Day'),
+              ('2006-11-23', 'Thanksgiving'),
+              ('2006-12-25', 'Christmas'),
+              ('2007-01-01', 'New Year''s Day'),
+              ('2007-01-15', 'Martin Luther King Day'),
+              ('2007-02-19', 'President''s Day'),
+              ('2007-05-28', 'Memorial Day'),
+              ('2007-07-04', 'Independence Day'),
+              ('2007-09-03', 'Labor Day'),
+              ('2007-10-08', 'Columbus Day'),
+              ('2007-11-11', 'Veterans Day'),
+              ('2007-11-12', 'Veterans Day Observance'),
+              ('2007-11-22', 'Thanksgiving'),
+              ('2007-12-25', 'Christmas'),
+              ('2008-01-01', 'New Year''s Day'),
+              ('2008-01-21', 'Martin Luther King Day'),
+              ('2008-02-18', 'President''s Day'),
+              ('2008-05-26', 'Memorial Day'),
+              ('2008-07-04', 'Independence Day'),
+              ('2008-09-01', 'Labor Day'),
+              ('2008-10-13', 'Columbus Day'),
+              ('2008-11-11', 'Veterans Day'),
+              ('2008-11-27', 'Thanksgiving'),
+              ('2008-12-25', 'Christmas'),
+              ('2009-01-01', 'New Year''s Day'),
+              ('2009-01-19', 'Martin Luther King Day'),
+              ('2009-02-16', 'President''s Day Observance'),
+              ('2009-05-25', 'Memorial Day'),
+              ('2009-07-03', 'Independence Day Observance'),
+              ('2009-07-04', 'Independence Day'),
+              ('2009-09-07', 'Labor Day'),
+              ('2009-10-12', 'Columbus Day'),
+              ('2009-11-11', 'Veterans Day'),
+              ('2009-11-26', 'Thanksgiving'),
+              ('2009-12-25', 'Christmas'),
+              ('2010-01-01', 'New Year''s Day'),
+              ('2010-01-18', 'Martin Luther King Day'),
+              ('2010-02-15', 'President''s Day'),
+              ('2010-05-31', 'Memorial Day'),
+              ('2010-07-04', 'Independence Day'),
+              ('2010-07-05', 'Independence Day Observance'),
+              ('2010-09-06', 'Labor Day'),
+              ('2010-10-11', 'Columbus Day'),
+              ('2010-11-11', 'Veterans Day'),
+              ('2010-11-25', 'Thanksgiving'),
+              ('2010-12-24', 'Christmas Observance/Christmas Eve'),
+              ('2010-12-25', 'Christmas'),
+              ('2010-12-31', 'New Year''s Day Observance'),
+              ('2011-01-01', 'New Year''s Day'),
+              ('2011-01-17', 'Martin Luther King Day'),
+              ('2011-02-21', 'President''s Day'),
+              ('2011-05-30', 'Memorial Day'),
+              ('2011-07-04', 'Independence Day'),
+              ('2011-09-05', 'Labor Day'),
+              ('2011-10-10', 'Columbus Day'),
+              ('2011-11-11', 'Veterans Day'),
+              ('2011-11-24', 'Thanksgiving'),
+              ('2011-12-25', 'Christmas'),
+              ('2011-12-26', 'Christmas Observance'),
+              ('2012-01-01', 'New Year''s Day'),
+              ('2012-01-02', 'New Year''s Day Observance'),
+              ('2012-01-16', 'Martin Luther King Day'),
+              ('2012-02-20', 'President''s Day'),
+              ('2012-05-28', 'Memorial Day'),
+              ('2012-07-04', 'Independence Day'),
+              ('2012-09-03', 'Labor Day'),
+              ('2012-10-08', 'Columbus Day'),
+              ('2012-11-11', 'Veterans Day'),
+              ('2012-11-12', 'Veterans Day Observance'),
+              ('2012-11-22', 'Thanksgiving'),
+              ('2012-12-25', 'Christmas'),
+              ('2013-01-01', 'New Year''s Day'),
+              ('2013-01-21', 'Martin Luther King Day'),
+              ('2013-02-18', 'President''s Day'),
+              ('2013-05-27', 'Memorial Day'),
+              ('2013-07-04', 'Independence Day'),
+              ('2013-09-02', 'Labor Day'),
+              ('2013-10-14', 'Columbus Day'),
+              ('2013-11-11', 'Veterans Day'),
+              ('2013-11-28', 'Thanksgiving'),
+              ('2013-12-25', 'Christmas'),
+              ('2014-01-01', 'New Year''s Day'),
+              ('2014-01-20', 'Martin Luther King Day'),
+              ('2014-02-17', 'President''s Day'),
+              ('2014-05-26', 'Memorial Day'),
+              ('2014-07-04', 'Independence Day'),
+              ('2014-09-01', 'Labor Day'),
+              ('2014-10-13', 'Columbus Day'),
+              ('2014-11-11', 'Veterans Day'),
+              ('2014-11-27', 'Thanksgiving'),
+              ('2014-12-25', 'Christmas'),
+              ('2015-01-01', 'New Year''s Day'),
+              ('2015-01-19', 'Martin Luther King Day'),
+              ('2015-02-16', 'President''s Day Observance'),
+              ('2015-05-25', 'Memorial Day'),
+              ('2015-07-03', 'Independence Day Observance'),
+              ('2015-07-04', 'Independence Day'),
+              ('2015-09-07', 'Labor Day'),
+              ('2015-10-12', 'Columbus Day'),
+              ('2015-11-11', 'Veterans Day'),
+              ('2015-11-26', 'Thanksgiving'),
+              ('2015-12-25', 'Christmas'),
+              ('2016-01-01', 'New Year''s Day'),
+              ('2016-01-18', 'Martin Luther King Day'),
+              ('2016-02-15', 'President''s Day'),
+              ('2016-05-30', 'Memorial Day'),
+              ('2016-07-04', 'Independence Day'),
+              ('2016-09-05', 'Labor Day'),
+              ('2016-10-10', 'Columbus Day'),
+              ('2016-11-11', 'Veterans Day'),
+              ('2016-11-24', 'Thanksgiving'),
+              ('2016-12-25', 'Christmas'),
+              ('2016-12-26', 'Christmas Observance'),
+              ('2017-01-01', 'New Year''s Day'),
+              ('2017-01-02', 'New Year''s Day Observance'),
+              ('2017-01-16', 'Martin Luther King Day'),
+              ('2017-02-20', 'President''s Day'),
+              ('2017-05-29', 'Memorial Day'),
+              ('2017-07-04', 'Independence Day'),
+              ('2017-09-04', 'Labor Day'),
+              ('2017-10-09', 'Columbus Day'),
+              ('2017-11-10', 'Veterans Day Observance'),
+              ('2017-11-11', 'Veterans Day'),
+              ('2017-11-23', 'Thanksgiving'),
+              ('2017-12-25', 'Christmas'),
+              ('2018-01-01', 'New Year''s Day'),
+              ('2018-01-15', 'Martin Luther King Day'),
+              ('2018-02-19', 'President''s Day'),
+              ('2018-05-28', 'Memorial Day'),
+              ('2018-07-04', 'Independence Day'),
+              ('2018-09-03', 'Labor Day'),
+              ('2018-10-08', 'Columbus Day'),
+              ('2018-11-11', 'Veterans Day'),
+              ('2018-11-12', 'Veterans Day Observance'),
+              ('2018-11-22', 'Thanksgiving'),
+              ('2018-12-25', 'Christmas'),
+              ('2019-01-01', 'New Year''s Day'),
+              ('2019-01-21', 'Martin Luther King Day'),
+              ('2019-02-18', 'President''s Day'),
+              ('2019-05-27', 'Memorial Day'),
+              ('2019-07-04', 'Independence Day'),
+              ('2019-09-02', 'Labor Day'),
+              ('2019-10-14', 'Columbus Day'),
+              ('2019-11-11', 'Veterans Day'),
+              ('2019-11-28', 'Thanksgiving'),
+              ('2019-12-25', 'Christmas'),
+              ('2020-01-01', 'New Year''s Day'),
+              ('2020-01-20', 'Martin Luther King Day'),
+              ('2020-02-17', 'President''s Day'),
+              ('2020-05-25', 'Memorial Day'),
+              ('2020-07-03', 'Independence Day Observance'),
+              ('2020-07-04', 'Independence Day'),
+              ('2020-09-07', 'Labor Day'),
+              ('2020-10-12', 'Columbus Day'),
+              ('2020-11-11', 'Veterans Day'),
+              ('2020-11-26', 'Thanksgiving'),
+              ('2020-12-25', 'Christmas'),
+              ('2021-01-01', 'New Year''s Day'),
+              ('2021-01-18', 'Martin Luther King Day'),
+              ('2021-02-15', 'President''s Day'),
+              ('2021-05-31', 'Memorial Day'),
+              ('2021-06-18', 'Juneteenth Observance'),
+              ('2021-06-19', 'Juneteenth'),
+              ('2021-07-04', 'Independence Day'),
+              ('2021-07-05', 'Independence Day Observance'),
+              ('2021-09-06', 'Labor Day'),
+              ('2021-10-11', 'Columbus Day'),
+              ('2021-11-11', 'Veterans Day'),
+              ('2021-11-25', 'Thanksgiving'),
+              ('2021-12-24', 'Christmas Observance/Christmas Eve'),
+              ('2021-12-25', 'Christmas'),
+              ('2021-12-31', 'New Year''s Day Observance'),
+              ('2022-01-01', 'New Year''s Day'),
+              ('2022-01-17', 'Martin Luther King Day'),
+              ('2022-02-21', 'President''s Day'),
+              ('2022-05-30', 'Memorial Day'),
+              ('2022-06-19', 'Juneteenth'),
+              ('2022-06-20', 'Juneteenth Observance'),
+              ('2022-07-04', 'Independence Day'),
+              ('2022-09-05', 'Labor Day'),
+              ('2022-10-10', 'Columbus Day'),
+              ('2022-11-11', 'Veterans Day'),
+              ('2022-11-24', 'Thanksgiving'),
+              ('2022-12-25', 'Christmas'),
+              ('2022-12-26', 'Christmas Observance'),
+              ('2023-01-01', 'New Year''s Day'),
+              ('2023-01-02', 'New Year''s Day Observance'),
+              ('2023-01-16', 'Martin Luther King Day'),
+              ('2023-02-20', 'President''s Day'),
+              ('2023-05-29', 'Memorial Day'),
+              ('2023-06-19', 'Juneteenth'),
+              ('2023-07-04', 'Independence Day'),
+              ('2023-09-04', 'Labor Day'),
+              ('2023-10-09', 'Columbus Day'),
+              ('2023-11-10', 'Veterans Day Observance'),
+              ('2023-11-11', 'Veterans Day'),
+              ('2023-11-23', 'Thanksgiving'),
+              ('2023-12-25', 'Christmas'),
+              ('2024-01-01', 'New Year''s Day'),
+              ('2024-01-15', 'Martin Luther King Day'),
+              ('2024-02-19', 'President''s Day'),
+              ('2024-05-27', 'Memorial Day'),
+              ('2024-06-19', 'Juneteenth'),
+              ('2024-07-04', 'Independence Day'),
+              ('2024-09-02', 'Labor Day'),
+              ('2024-10-14', 'Columbus Day'),
+              ('2024-11-11', 'Veterans Day'),
+              ('2024-11-28', 'Thanksgiving'),
+              ('2024-12-25', 'Christmas'),
+              ('2025-01-01', 'New Year''s Day'),
+              ('2025-01-20', 'Martin Luther King Day'),
+              ('2025-02-17', 'President''s Day'),
+              ('2025-05-26', 'Memorial Day'),
+              ('2025-06-19', 'Juneteenth'),
+              ('2025-07-04', 'Independence Day'),
+              ('2025-09-01', 'Labor Day'),
+              ('2025-10-13', 'Columbus Day'),
+              ('2025-11-11', 'Veterans Day'),
+              ('2025-11-27', 'Thanksgiving'),
+              ('2025-12-25', 'Christmas'),
+              ('2026-01-01', 'New Year''s Day'),
+              ('2026-01-19', 'Martin Luther King Day'),
+              ('2026-02-16', 'President''s Day Observance'),
+              ('2026-05-25', 'Memorial Day'),
+              ('2026-06-19', 'Juneteenth'),
+              ('2026-07-03', 'Independence Day Observance'),
+              ('2026-07-04', 'Independence Day'),
+              ('2026-09-07', 'Labor Day'),
+              ('2026-10-12', 'Columbus Day'),
+              ('2026-11-11', 'Veterans Day'),
+              ('2026-11-26', 'Thanksgiving'),
+              ('2026-12-25', 'Christmas'),
+              ('2027-01-01', 'New Year''s Day'),
+              ('2027-01-18', 'Martin Luther King Day'),
+              ('2027-02-15', 'President''s Day'),
+              ('2027-05-31', 'Memorial Day'),
+              ('2027-06-18', 'Juneteenth Observance'),
+              ('2027-06-19', 'Juneteenth'),
+              ('2027-07-04', 'Independence Day'),
+              ('2027-07-05', 'Independence Day Observance'),
+              ('2027-09-06', 'Labor Day'),
+              ('2027-10-11', 'Columbus Day'),
+              ('2027-11-11', 'Veterans Day'),
+              ('2027-11-25', 'Thanksgiving'),
+              ('2027-12-24', 'Christmas Observance/Christmas Eve'),
+              ('2027-12-25', 'Christmas'),
+              ('2027-12-31', 'New Year''s Day Observance'),
+              ('2028-01-01', 'New Year''s Day'),
+              ('2028-01-17', 'Martin Luther King Day'),
+              ('2028-02-21', 'President''s Day'),
+              ('2028-05-29', 'Memorial Day'),
+              ('2028-06-19', 'Juneteenth'),
+              ('2028-07-04', 'Independence Day'),
+              ('2028-09-04', 'Labor Day'),
+              ('2028-10-09', 'Columbus Day'),
+              ('2028-11-10', 'Veterans Day Observance'),
+              ('2028-11-11', 'Veterans Day'),
+              ('2028-11-23', 'Thanksgiving'),
+              ('2028-12-25', 'Christmas'),
+              ('2029-01-01', 'New Year''s Day'),
+              ('2029-01-15', 'Martin Luther King Day'),
+              ('2029-02-19', 'President''s Day'),
+              ('2029-05-28', 'Memorial Day'),
+              ('2029-06-19', 'Juneteenth'),
+              ('2029-07-04', 'Independence Day'),
+              ('2029-09-03', 'Labor Day'),
+              ('2029-10-08', 'Columbus Day'),
+              ('2029-11-11', 'Veterans Day'),
+              ('2029-11-12', 'Veterans Day Observance'),
+              ('2029-11-22', 'Thanksgiving'),
+              ('2029-12-25', 'Christmas'),
+              ('2030-01-01', 'New Year''s Day'),
+              ('2030-01-21', 'Martin Luther King Day'),
+              ('2030-02-18', 'President''s Day'),
+              ('2030-05-27', 'Memorial Day'),
+              ('2030-06-19', 'Juneteenth'),
+              ('2030-07-04', 'Independence Day'),
+              ('2030-09-02', 'Labor Day'),
+              ('2030-10-14', 'Columbus Day'),
+              ('2030-11-11', 'Veterans Day'),
+              ('2030-11-28', 'Thanksgiving'),
+              ('2030-12-25', 'Christmas')
+    S3 Load 0:
+      type: "s3-load"
+      skipped: false
+      parameters:
+        componentName: "S3 Load 0"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://online-mtln-training-s3-flights/"
+        pattern: "training_s3_flights_.*.gz"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_training_flights"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ""
+        skipHeader: "1"
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: ""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "False"
+design:
+  components:
+    Start 0:
+      position:
+        x: -128
+        "y": 0
+      tempMetlId: 1120
+    Check variables:
+      position:
+        x: 16
+        "y": 0
+      tempMetlId: 1121
+    Create us_holiday_observance:
+      position:
+        x: 160
+        "y": 64
+      tempMetlId: 1122
+    Create stg_training_flights:
+      position:
+        x: 160
+        "y": -64
+      tempMetlId: 1123
+    Reference data 1988-2030:
+      position:
+        x: 320
+        "y": 64
+      tempMetlId: 1124
+    S3 Load 0:
+      position:
+        x: 320
+        "y": -64
+      tempMetlId: 1125
+  notes:
+    "1118":
+      position:
+        x: -302
+        "y": -203
+      size:
+        height: 80
+        width: 593
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+        **examples_schema** (name of a Snowflake schema)
+    "1119":
+      position:
+        x: -396
+        "y": 138
+      size:
+        height: 91
+        width: 989
+      theme: "green"
+      content: |-
+        These are the example jobs from [https://www.matillion.com/resources/developer-relations/the-best-way-to-make-a-contingency-table-in-matillion-etl](https://www.matillion.com/resources/developer-relations/the-best-way-to-make-a-contingency-table-in-matillion-etl)
+
+        Run this job, then open **example contingency table transform** after this job has finished running
+
+        A similar technique is described in [https://www.matillion.com/resources/developer-relations/is-it-going-to-rain-tomorrow-forecast-accuracy-in-a-unified-data-science-and-bi-environment](https://www.matillion.com/resources/developer-relations/is-it-going-to-rain-tomorrow-forecast-accuracy-in-a-unified-data-science-and-bi-environment)

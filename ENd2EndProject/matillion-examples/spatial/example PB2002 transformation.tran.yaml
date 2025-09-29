@@ -1,0 +1,280 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_quakes:
+      type: "table-input"
+      parameters:
+        componentName: "stg_quakes"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_quakes"
+        columnNames:
+        - "ID"
+        - "UTC"
+        - "depth"
+        - "magnitude"
+        - "geo"
+        timeOffset: ""
+    stg_pb2002:
+      type: "table-input"
+      parameters:
+        componentName: "stg_pb2002"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_pb2002"
+        columnNames:
+        - "id"
+        - "name"
+        - "type"
+        - "geo"
+        timeOffset: ""
+    Only Mag >= 2:
+      type: "filter"
+      sources:
+      - "stg_quakes"
+      parameters:
+        componentName: "Only Mag >= 2"
+        filterConditions:
+        - - "magnitude"
+          - "Is"
+          - "Greater than or equal to"
+          - "2"
+        combineCondition: "AND"
+    Quake renamer:
+      type: "rename"
+      sources:
+      - "Only Mag >= 2"
+      parameters:
+        componentName: "Quake renamer"
+        columnMapping:
+        - - "ID"
+          - "ID"
+        - - "UTC"
+          - "UTC"
+        - - "depth"
+          - "depth"
+        - - "magnitude"
+          - "magnitude"
+        - - "geo"
+          - "geo"
+        includeInputColumns: "No"
+    Spatial Join:
+      type: "join"
+      sources:
+      - "stg_pb2002"
+      - "Quake renamer"
+      parameters:
+        componentName: "Spatial Join"
+        mainTable: "Quake renamer"
+        mainTableAlias: "q"
+        joins:
+        - - "stg_pb2002"
+          - "pb"
+          - "Left"
+        joinExpressions:
+        - - "ST_DISTANCE(\"q\".\"geo\", \"pb\".\"geo\") < 1000000"
+          - "q_Left_pb"
+        columnMappings:
+        - - "q.ID"
+          - "q_id"
+        - - "q.UTC"
+          - "UTC"
+        - - "q.depth"
+          - "depth"
+        - - "q.magnitude"
+          - "magnitude"
+        - - "q.geo"
+          - "q_geo"
+        - - "pb.id"
+          - "pb_id"
+        - - "pb.name"
+          - "name"
+        - - "pb.type"
+          - "type"
+        - - "pb.geo"
+          - "pb_geo"
+    Spatial Derivations:
+      type: "calculator"
+      sources:
+      - "Spatial Join"
+      parameters:
+        componentName: "Spatial Derivations"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "ROUND(ST_DISTANCE(\"q_geo\", \"pb_geo\") / 1000)"
+          - "km_to_boundary"
+        - - "TO_TIMESTAMP_NTZ(\"UTC\")"
+          - "ts_utc"
+        - - "ST_X(\"q_geo\")"
+          - "longitude"
+        - - "ST_Y(\"q_geo\")"
+          - "latitude"
+        - - |-
+            CASE WHEN "pb_id" IS NULL THEN 'Intraplate'
+            ELSE INITCAP(COALESCE(NULLIF("type", ''), 'boundary'))
+            END
+          - "boundary_type"
+        - - "COALESCE(\"pb_id\", 'Intraplate')"
+          - "boundary_id_coalesce"
+        - - "COALESCE(\"name\", 'Intraplate')"
+          - "boundary_name_coalesce"
+        - - "1"
+          - "counter"
+        - - "TO_CHAR(TO_DATE(SUBSTR(\"q_id\",1,8), 'YYYYMMDD'), 'YYYY-MM-DD')"
+          - "yyyymmdd"
+        - - |-
+            TRIM(TO_CHAR(
+              CASE
+                WHEN "depth" <= 0 THEN 0
+                ELSE ROUND("depth", -1)
+              END,
+              '99999'))
+          - "depth_km_string"
+    Rank prox:
+      type: "rank"
+      sources:
+      - "Spatial Derivations"
+      parameters:
+        componentName: "Rank prox"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "q_id"
+        orderingWithinPartitions:
+        - - "km_to_boundary"
+          - "Asc"
+        functions:
+        - - "Row Number"
+          - "rn"
+    Only Closest:
+      type: "filter"
+      sources:
+      - "Rank prox"
+      parameters:
+        componentName: "Only Closest"
+        filterConditions:
+        - - "rn"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "Only Closest"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "q_id"
+          - "event_id"
+        - - "yyyymmdd"
+          - "yyyymmdd"
+        - - "depth_km_string"
+          - "depth_km"
+        - - "magnitude"
+          - "magnitude"
+        - - "longitude"
+          - "longitude"
+        - - "latitude"
+          - "latitude"
+        - - "boundary_type"
+          - "location_type"
+        - - "boundary_name_coalesce"
+          - "boundary_name"
+        - - "km_to_boundary"
+          - "km_to_boundary"
+        - - "counter"
+          - "counter"
+        includeInputColumns: "No"
+    Rewrite agg_qb:
+      type: "rewrite-table"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Rewrite agg_qb"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "agg_qb"
+        orderBy:
+design:
+  components:
+    stg_quakes:
+      position:
+        x: 375
+        "y": 234
+      tempMetlId: 1097
+    stg_pb2002:
+      position:
+        x: 583
+        "y": 394
+      tempMetlId: 1098
+    Only Mag >= 2:
+      position:
+        x: 487
+        "y": 234
+      tempMetlId: 1099
+    Quake renamer:
+      position:
+        x: 583
+        "y": 234
+      tempMetlId: 1100
+    Spatial Join:
+      position:
+        x: 711
+        "y": 314
+      tempMetlId: 1101
+    Spatial Derivations:
+      position:
+        x: 839
+        "y": 314
+      tempMetlId: 1102
+    Rank prox:
+      position:
+        x: 967
+        "y": 314
+      tempMetlId: 1103
+    Only Closest:
+      position:
+        x: 1095
+        "y": 314
+      tempMetlId: 1104
+    Rename 0:
+      position:
+        x: 1223
+        "y": 314
+      tempMetlId: 1105
+    Rewrite agg_qb:
+      position:
+        x: 1351
+        "y": 314
+      tempMetlId: 1106
+  notes:
+    "1096":
+      position:
+        x: 312
+        "y": 167
+      size:
+        height: 141
+        width: 114
+      theme: "green"
+      content: "Point events"
+    "1095":
+      position:
+        x: 384
+        "y": 356
+      size:
+        height: 92
+        width: 237
+      theme: "green"
+      content: "Line segments from Shapefile"
+    "1094":
+      position:
+        x: 592
+        "y": 113
+      size:
+        height: 40
+        width: 403
+      theme: "green"
+      content: "This is an example of a **spatial join** in a Matillion ETL data Transformation\
+        \ Job"

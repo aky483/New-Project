@@ -1,0 +1,292 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Fixed Iterator 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    S3 Load 0:
+      type: "s3-load"
+      skipped: false
+      parameters:
+        componentName: "S3 Load 0"
+        stage: "AWS_Stage"
+        pattern: "${file_name}.csv"
+        encryption: "None"
+        warehouse: "COMPUTE_WH"
+        database: "${JV_DB}"
+        schema: "${JV_SCHEMA}"
+        targetTable: "${file_name.replace(/\"/g,'')}"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ","
+        skipHeader: "1"
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: ""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "True"
+        metadataFields:
+    Fixed Iterator 0:
+      type: "fixed-iterator"
+      transitions:
+        unconditional:
+        - "Query Result To Grid 0"
+      iterationTarget: "S3 Load 0"
+      skipped: false
+      parameters:
+        componentName: "Fixed Iterator 0"
+        concurrency: "Sequential"
+        variablesToIterate:
+        - "file_name"
+        iterationValues:
+        - - "MENU_ITEMS"
+        - - "ORDER_DETAILS"
+        breakOnFailure: "No"
+    Query Result To Grid 0:
+      type: "query-to-grid"
+      transitions:
+        success:
+        - "Python Script 0"
+      skipped: false
+      parameters:
+        componentName: "Query Result To Grid 0"
+        mode: "Advanced"
+        query: "/* Note: this query will be run as a subquery for the purposes of\
+          \ sampling the data.\n   As such it will be restricted by any subquery limitations\
+          \ specified by the current platform. */\n   SELECT UPPER(TABLE_NAME) TABLE_NAME,UPPER(LOAD_TYPE)\
+          \ LOAD_TYPE,IS_ACTIVE\nFROM \nRESTAURANTSALES.RESTAURANT_METADATA.TABLE_LOAD_METADATA\n\
+          WHERE IS_ACTIVE =1\n"
+        gridVariable: "GRID_VAR_TBL_LOADTYPE"
+        gridVariableMapping:
+        - - "TABLE_NAME"
+          - "TABLE_NAME"
+        - - "LOAD_TYPE"
+          - "LOAD_TYPE"
+    Python Script 0:
+      type: "python-script"
+      transitions:
+        failure:
+        - "Copy of SNS Message 0 (1)"
+        unconditional:
+        - "Grid Iterator 0"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "###\n# Variables are directly accessible: \n#   print (myvar)\n#\
+          \ Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\nprint\
+          \ (context.getGridVariable('GRID_VAR_TBL_LOADTYPE'))\nprint(JV_TABLE_NAME)\n\
+          print (JV_LOADTYPE)\n"
+        interpreter: "Python 3"
+        timeout: "360"
+    Iterarte over each table:
+      type: "run-orchestration"
+      skipped: false
+      parameters:
+        componentName: "Iterarte over each table"
+        orchestrationJob: "ENd2EndProject/V2_2Extract_basedon_loadtype22"
+        setScalarVariables:
+        - - "JV_DB"
+          - "${JV_DB}"
+        - - "JV_TABLE_NAME"
+          - "${JV_TABLE_NAME}"
+        - - "JV_SCHEMA"
+          - "${JV_SCHEMA}"
+        - - "JV_LOADTYPE"
+          - "${JV_LOADTYPE}"
+        setGridVariables:
+    Grid Iterator 0:
+      type: "grid-iterator"
+      transitions:
+        success:
+        - "SNS Message 0"
+        failure:
+        - "Copy of SNS Message 0"
+      iterationTarget: "Iterarte over each table"
+      skipped: false
+      parameters:
+        componentName: "Grid Iterator 0"
+        gridVariable: "GRID_VAR_TBL_LOADTYPE"
+        gridIteratorVariableMapping:
+        - - "TABLE_NAME"
+          - "JV_TABLE_NAME"
+        - - "LOAD_TYPE"
+          - "JV_LOADTYPE"
+        breakOnFailure: "No"
+        concurrency: "Sequential"
+    SNS Message 0:
+      type: "sns-message"
+      skipped: false
+      parameters:
+        componentName: "SNS Message 0"
+        awsRegion: "eu-north-1"
+        topicName: "SNS_mat_new"
+        subject: "AWS Notification Message"
+        message: |
+          EXTRACTION AND CLEANING SUCCESSFULLY COMPLETED
+          JOB ID:${job_id}
+          JOB NAME: ${sysvar.thisPipeline.fullName}
+          MESSAGE:${sysvar.thisComponent.message}
+    Copy of SNS Message 0:
+      type: "sns-message"
+      skipped: false
+      parameters:
+        componentName: "Copy of SNS Message 0"
+        awsRegion: "eu-north-1"
+        topicName: "SNS_mat_new"
+        subject: "AWS Notification Message"
+        message: |-
+          Needs attention!!! Job failed :-(
+          JOB ID:${job_id}
+          JOB NAME: ${sysvar.thisPipeline.fullName}
+          MESSAGE:${sysvar.thisComponent.message}
+          DETAILED ERROR:${detailed_error}
+    Copy of SNS Message 0 (1):
+      type: "sns-message"
+      skipped: false
+      parameters:
+        componentName: "Copy of SNS Message 0 (1)"
+        awsRegion: "eu-north-1"
+        topicName: "SNS_mat_new"
+        subject: "AWS Notification Message"
+        message: |-
+          Needs attention!!! Job failed :-(
+          JOB ID:${job_id}
+          JOB NAME: ${sysvar.thisPipeline.fullName}
+          MESSAGE:${sysvar.thisComponent.message}
+          DETAILED ERROR:${detailed_error}
+  variables:
+    JV_DB:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANTSALES"
+    JV_SCHEMA:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANT_DB"
+    file_name:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "MENU_ITEMS"
+    JV_LOADTYPE:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "I"
+    JV_TABLE_NAME:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "ORDER_DETAILS"
+    dictionary_name:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "Mat_Tableinput"
+    GRID_VAR_TBL_LOADTYPE:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          TABLE_NAME:
+            columnType: "TEXT"
+          LOAD_TYPE:
+            columnType: "TEXT"
+      defaultValue:
+      - - "MENU_ITEMS"
+        - "R"
+design:
+  components:
+    Start 0:
+      position:
+        x: -16
+        "y": -80
+      tempMetlId: 4239
+    S3 Load 0:
+      position:
+        x: 144
+        "y": -80
+      tempMetlId: 4240
+    Fixed Iterator 0:
+      position:
+        x: 144
+        "y": -80
+      tempMetlId: 4241
+    Query Result To Grid 0:
+      position:
+        x: 289
+        "y": -77
+      tempMetlId: 4242
+    Python Script 0:
+      position:
+        x: 420
+        "y": -77
+      tempMetlId: 4243
+    Iterarte over each table:
+      position:
+        x: 544
+        "y": -48
+      tempMetlId: 4244
+    Grid Iterator 0:
+      position:
+        x: 544
+        "y": -80
+      tempMetlId: 4245
+    SNS Message 0:
+      position:
+        x: 624
+        "y": -176
+      tempMetlId: 4246
+    Copy of SNS Message 0:
+      position:
+        x: 656
+        "y": 16
+      tempMetlId: 4247
+    Copy of SNS Message 0 (1):
+      position:
+        x: 416
+        "y": 48
+      tempMetlId: 4248

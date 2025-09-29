@@ -1,0 +1,137 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    ORDER_DETAILS:
+      type: "table-input"
+      parameters:
+        componentName: "ORDER_DETAILS"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB_DES"
+        targetTable: "ORDER_DETAILS_DES"
+        columnNames:
+        - "ORDER_DETAILS_ID"
+        - "ORDER_ID"
+        - "ORDER_DATE"
+        - "ORDER_TIME"
+        - "ITEM_ID"
+        timeOffset: ""
+    MENU_ITEMS:
+      type: "table-input"
+      parameters:
+        componentName: "MENU_ITEMS"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB_DES"
+        targetTable: "MENU_ITEMS_DES"
+        columnNames:
+        - "MENU_ITEM_ID"
+        - "ITEM_NAME"
+        - "CATEGORY"
+        - "PRICE"
+        timeOffset: ""
+    Join 0:
+      type: "join"
+      sources:
+      - "ORDER_DETAILS"
+      - "MENU_ITEMS"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "ORDER_DETAILS"
+        mainTableAlias: "Main"
+        joins:
+        - - "MENU_ITEMS"
+          - "menu"
+          - "Left"
+        joinExpressions:
+        - - "\"Main\".\"ITEM_ID\"=\"menu\".\"MENU_ITEM_ID\""
+          - "Main_Left_menu"
+        columnMappings:
+        - - "Main.ORDER_DETAILS_ID"
+          - "ORDER_DETAILS_ID"
+        - - "Main.ORDER_ID"
+          - "ORDER_ID"
+        - - "Main.ORDER_DATE"
+          - "ORDER_DATE"
+        - - "Main.ORDER_TIME"
+          - "ORDER_TIME"
+        - - "Main.ITEM_ID"
+          - "ITEM_ID"
+        - - "menu.ITEM_NAME"
+          - "ITEM_NAME"
+        - - "menu.CATEGORY"
+          - "CATEGORY"
+        - - "menu.PRICE"
+          - "PRICE"
+    Aggregate 0:
+      type: "aggregate"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Aggregate 0"
+        groupings:
+        - "ITEM_NAME"
+        aggregations:
+        - - "ITEM_NAME"
+          - "Count"
+        groupingType: "Group By"
+    Rank 0:
+      type: "rank"
+      sources:
+      - "Aggregate 0"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        orderingWithinPartitions:
+        - - "count_ITEM_NAME"
+          - "Desc"
+        functions:
+        - - "Dense Rank"
+          - "popular_items"
+    First/Last 0:
+      type: "first-last"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "First/Last 0"
+        groupingColumns:
+        - "ITEM_NAME"
+        orderingInPartitions:
+        - - "popular_items"
+          - "Asc"
+        firstLastColumns:
+        - - "popular_items"
+          - "First"
+        ignoreNulls: "No"
+design:
+  components:
+    ORDER_DETAILS:
+      position:
+        x: 219
+        "y": 72
+      tempMetlId: 4291
+    MENU_ITEMS:
+      position:
+        x: 224
+        "y": 192
+      tempMetlId: 4292
+    Join 0:
+      position:
+        x: 396
+        "y": 86
+      tempMetlId: 4293
+    Aggregate 0:
+      position:
+        x: 521
+        "y": 78
+      tempMetlId: 4294
+    Rank 0:
+      position:
+        x: 670
+        "y": 77
+      tempMetlId: 4295
+    First/Last 0:
+      position:
+        x: 789
+        "y": 85
+      tempMetlId: 4296

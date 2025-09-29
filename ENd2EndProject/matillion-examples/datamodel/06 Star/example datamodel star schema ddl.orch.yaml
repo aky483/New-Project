@@ -1,0 +1,187 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create dim_fan_status_seq"
+        - "Create dim_equipment_seq"
+        - "Create fact_bubble_event"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create dim_fan_status_seq:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Create dim_fan_status"
+      skipped: false
+      parameters:
+        componentName: "Create dim_fan_status_seq"
+        sqlScript: |
+          CREATE OR REPLACE SEQUENCE "${environment_database}"."${examples_schema}"."dim_fan_status_seq";
+    Create dim_equipment_seq:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Create dim_equipment"
+      skipped: false
+      parameters:
+        componentName: "Create dim_equipment_seq"
+        sqlScript: "CREATE OR REPLACE SEQUENCE \"${environment_database}\".\"${examples_schema}\"\
+          .\"dim_equipment_seq\";"
+    Create dim_fan_status:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "Create dim_fan_status"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "dim_fan_status"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "fan_status_key"
+          - "NUMBER"
+          - "6"
+          - "0"
+          - "\"${environment_database}\".\"${examples_schema}\".\"dim_fan_status_seq\"\
+            .NEXTVAL"
+          - "No"
+          - "No"
+          - ""
+        - - "fan_status_code"
+          - "NUMBER"
+          - "6"
+          - "0"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "status"
+          - "VARCHAR"
+          - "80"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        - "fan_status_key"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create dim_equipment:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "Create dim_equipment"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "dim_equipment"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "equipment_key"
+          - "NUMBER"
+          - "6"
+          - "0"
+          - "\"${environment_database}\".\"${examples_schema}\".\"dim_equipment_seq\"\
+            .NEXTVAL"
+          - "No"
+          - "No"
+          - ""
+        - - "equipment_id"
+          - "VARCHAR"
+          - "80"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "name"
+          - "VARCHAR"
+          - "80"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        - "equipment_key"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create fact_bubble_event:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Create fact_bubble_event"
+        sqlScript: "CREATE OR REPLACE TABLE \"${environment_database}\".\"${examples_schema}\"\
+          .\"fact_bubble_event\" (\n\t\"id\" VARCHAR(128) NOT NULL,\n\t\"ts\" TIMESTAMP_NTZ\
+          \ NOT NULL,\n\t\"equipment_key\" INT NOT NULL,\n\t\"fan_status_key\" INT\
+          \ NOT NULL,\n\t\"date_key\" INT NOT NULL,\n\t\"hour_key\" INT NOT NULL,\n\
+          \tPRIMARY KEY (\n\t\t\"id\"\n\t)\n)"
+design:
+  components:
+    Start 0:
+      position:
+        x: -272
+        "y": 16
+      tempMetlId: 1278
+    Create dim_fan_status_seq:
+      position:
+        x: -64
+        "y": -96
+      tempMetlId: 1279
+    Create dim_equipment_seq:
+      position:
+        x: -72
+        "y": 16
+      tempMetlId: 1301
+    Create dim_fan_status:
+      position:
+        x: 112
+        "y": -96
+      tempMetlId: 1302
+    Create dim_equipment:
+      position:
+        x: 104
+        "y": 16
+      tempMetlId: 1303
+    Create fact_bubble_event:
+      position:
+        x: -64
+        "y": 128
+      tempMetlId: 1304
+  notes:
+    "1277":
+      position:
+        x: -761
+        "y": 1
+      size:
+        height: 88
+        width: 395
+      theme: "green"
+      content: |-
+        For tips on Fact Table design, refer to [https://www.matillion.com/resources/blog/top-10-tips-for-creating-fact-tables-using-matillion](https://www.matillion.com/resources/blog/top-10-tips-for-creating-fact-tables-using-matillion)
+
+        For tips on Dimension Table design, refer to [https://www.matillion.com/resources/blog/top-10-tips-for-creating-dimension-tables-using-matillion](https://www.matillion.com/resources/blog/top-10-tips-for-creating-dimension-tables-using-matillion)
+    "1276":
+      position:
+        x: -620
+        "y": -238
+      size:
+        height: 166
+        width: 343
+      theme: "green"
+      content: |-
+        This creates star schema (or "presentation layer") objects. Star Schemas are designed to meet specific reporting requirements, and they represent gold standard consumability in that respect.
+
+        In this architecture, star schema objects are rather throwaway. They can easily be dropped and recreated. The real "Data Warehouse" tables are in the 3NF or Data Vault layer.
+
+        Alternatively, star schema objects can often be entirely virtualized as views - as shown in the "slowly changing dimensions" example jobs. So the option for these objects is usually "create or replace".

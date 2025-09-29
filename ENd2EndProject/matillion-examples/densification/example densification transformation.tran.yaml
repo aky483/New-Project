@@ -1,0 +1,470 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_xrate:
+      type: "table-input"
+      parameters:
+        componentName: "stg_xrate"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_xrate"
+        columnNames:
+        - "row"
+        timeOffset: ""
+    Extract Nested Data:
+      type: "extract-nested-data-sf"
+      sources:
+      - "stg_xrate"
+      parameters:
+        componentName: "Extract Nested Data"
+        includeInputColumns: "No"
+        columns:
+        - name: "AED"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "AED"
+          isArray: "false"
+          include: "false"
+        - name: "CAD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "CAD"
+          isArray: "false"
+          include: "false"
+        - name: "CHF"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "CHF"
+          isArray: "false"
+          include: "false"
+        - name: "CNY"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "CNY"
+          isArray: "false"
+          include: "false"
+        - name: "EUR"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "EUR"
+          isArray: "false"
+          include: "true"
+        - name: "GBP"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "GBP"
+          isArray: "false"
+          include: "false"
+        - name: "HKD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "HKD"
+          isArray: "false"
+          include: "false"
+        - name: "IDR"
+          datatype: "NUMBER"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "IDR"
+          isArray: "false"
+          include: "false"
+        - name: "INR"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "INR"
+          isArray: "false"
+          include: "false"
+        - name: "JPY"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "JPY"
+          isArray: "false"
+          include: "false"
+        - name: "KRW"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "KRW"
+          isArray: "false"
+          include: "false"
+        - name: "MYR"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "MYR"
+          isArray: "false"
+          include: "false"
+        - name: "NZD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "NZD"
+          isArray: "false"
+          include: "false"
+        - name: "SDR"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "SDR"
+          isArray: "false"
+          include: "false"
+        - name: "SGD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "SGD"
+          isArray: "false"
+          include: "false"
+        - name: "TWD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "TWD"
+          isArray: "false"
+          include: "false"
+        - name: "USD"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "USD"
+          isArray: "false"
+          include: "false"
+        - name: "PGK"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "PGK"
+          isArray: "false"
+          include: "false"
+        - name: "Index"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "Index"
+          isArray: "false"
+          include: "false"
+        - name: "THB"
+          datatype: "FLOAT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "THB"
+          isArray: "false"
+          include: "false"
+        - name: "Timestamp"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "Timestamp"
+          isArray: "false"
+          include: "true"
+        - name: "VND"
+          datatype: "NUMBER"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "row"
+          aliasName: "VND"
+          isArray: "false"
+          include: "false"
+        outerJoin: "False"
+        inputAlias: "i"
+        arrayPrefix: "f"
+    MinMax:
+      type: "aggregate"
+      sources:
+      - "String to Date"
+      parameters:
+        componentName: "MinMax"
+        groupings:
+        aggregations:
+        - - "datevalue"
+          - "Min"
+        - - "datevalue"
+          - "Max"
+        groupingType: "Group By"
+    Find missing dates:
+      type: "join"
+      sources:
+      - "Spine"
+      - "String to Date"
+      - "MinMax"
+      parameters:
+        componentName: "Find missing dates"
+        mainTable: "Spine"
+        mainTableAlias: "s"
+        joins:
+        - - "MinMax"
+          - "mm"
+          - "Inner"
+        - - "String to Date"
+          - "o"
+          - "Left"
+        joinExpressions:
+        - - "DATEADD(DAY, \"s\".\"sequence\", \"mm\".\"min_datevalue\") <= \"mm\"\
+            .\"max_datevalue\""
+          - "s_Inner_mm"
+        - - "\"o\".\"datevalue\" = DATEADD(DAY, \"s\".\"sequence\", \"mm\".\"min_datevalue\"\
+            )"
+          - "s_Left_o"
+        columnMappings:
+        - - "s.sequence"
+          - "sequence"
+        - - "mm.min_datevalue"
+          - "start_date"
+        - - "o.datevalue"
+          - "measurement_date"
+        - - "o.EUR"
+          - "EUR"
+    Spine:
+      type: "generate-sequence"
+      parameters:
+        componentName: "Spine"
+        startValue: "0"
+        incrementValue: "1"
+        endValue: "5000"
+        outputColumn: "sequence"
+    Add date:
+      type: "calculator"
+      sources:
+      - "Find missing dates"
+      parameters:
+        componentName: "Add date"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "DATEADD(DAY, \"sequence\", \"start_date\")"
+          - "densified_date"
+        - - "CASE WHEN \"measurement_date\" IS NULL THEN NULL ELSE \"sequence\" END"
+          - "gapseq"
+    String to Date:
+      type: "calculator"
+      sources:
+      - "Extract Nested Data"
+      parameters:
+        componentName: "String to Date"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "TO_DATE(\"Timestamp\", 'YYYY-MM-DD')"
+          - "datevalue"
+    Last Known:
+      type: "calculator"
+      sources:
+      - "Renamer"
+      parameters:
+        componentName: "Last Known"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "LAST_VALUE(\"EUR\" IGNORE NULLS) OVER (ORDER BY \"datevalue\" ROWS BETWEEN\
+            \ UNBOUNDED PRECEDING AND CURRENT ROW)"
+          - "EUR_last_known"
+    Renamer:
+      type: "rename"
+      sources:
+      - "Add date"
+      parameters:
+        componentName: "Renamer"
+        columnMapping:
+        - - "sequence"
+          - "sequence"
+        - - "densified_date"
+          - "datevalue"
+        - - "gapseq"
+          - "gapseq"
+        - - "EUR"
+          - "EUR"
+    Zero Filled:
+      type: "calculator"
+      sources:
+      - "Renamer"
+      parameters:
+        componentName: "Zero Filled"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "NVL(\"EUR\", 0)"
+          - "EUR_zero_filled"
+    Rolling Mean:
+      type: "window-calculation"
+      sources:
+      - "Renamer"
+      parameters:
+        componentName: "Rolling Mean"
+        includeInputColumns: "Yes"
+        partitionData:
+        orderingWithinPartitions:
+        - - "datevalue"
+          - "Asc"
+        functions:
+        - - "Average"
+          - "EUR"
+          - "EUR_rolling_mean"
+        lowerBound: "offset preceding"
+        lowerBoundOffset: "3"
+        upperBound: "current row"
+    Linear Backfill:
+      type: "sql"
+      sources:
+      - "Renamer"
+      parameters:
+        componentName: "Linear Backfill"
+        query: |-
+          WITH data AS (
+          SELECT "sequence", "datevalue", "gapseq", "EUR",
+                 LAST_VALUE("gapseq" IGNORE NULLS) OVER (ORDER BY "datevalue" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS prior_gapseq,
+                 FIRST_VALUE("gapseq" IGNORE NULLS) OVER (ORDER BY "datevalue" ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS next_gapseq,
+                 LAST_VALUE("EUR" IGNORE NULLS) OVER (ORDER BY "datevalue" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS prior_EUR,
+                 FIRST_VALUE("EUR" IGNORE NULLS) OVER (ORDER BY "datevalue" ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS next_EUR
+          FROM $T{Renamer})
+          SELECT "sequence", "datevalue", "gapseq", "EUR",
+                 CASE WHEN "EUR" IS NULL
+                      THEN prior_EUR + ((next_EUR - prior_EUR) * ("sequence" - prior_gapseq) / (next_gapseq - prior_gapseq))
+                      ELSE "EUR"
+                 END AS "EUR_linear_fill"
+          FROM data
+          ORDER BY "sequence" DESC
+    Rolling Mean coalesced:
+      type: "calculator"
+      sources:
+      - "Rolling Mean"
+      parameters:
+        componentName: "Rolling Mean coalesced"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "COALESCE(\"EUR\", \"EUR_rolling_mean\")"
+          - "EUR_rolling_mean_coalesced"
+    Linear Regression:
+      type: "sql"
+      sources:
+      - "Renamer"
+      parameters:
+        componentName: "Linear Regression"
+        query: |-
+          WITH data AS (
+              SELECT "datevalue", "sequence", "EUR", ARRAY_CONSTRUCT("EUR", "sequence") AS "scatter"
+              FROM $T{Renamer})
+          SELECT measured."datevalue", COALESCE(measured."EUR", lag1."EUR" * (1 + r."slope")) AS "EUR_linear_reg"
+          FROM ( SELECT t1."sequence", REGR_SLOPE(t2."scatter"[0], t2."scatter"[1]) as "slope"
+                 FROM data t1
+                 JOIN data t2 ON t2."sequence" BETWEEN t1."sequence" - 10 AND t1."sequence" - 1
+                 GROUP BY t1."sequence" ) r
+          JOIN data lag1 ON lag1."sequence" = r."sequence" - 1
+          JOIN data measured ON measured."sequence" = r."sequence"
+design:
+  components:
+    stg_xrate:
+      position:
+        x: 304
+        "y": 224
+      tempMetlId: 1487
+    Extract Nested Data:
+      position:
+        x: 480
+        "y": 224
+      tempMetlId: 1488
+    MinMax:
+      position:
+        x: 768
+        "y": 320
+      tempMetlId: 1489
+    Find missing dates:
+      position:
+        x: 896
+        "y": 224
+      tempMetlId: 1490
+    Spine:
+      position:
+        x: 768
+        "y": 128
+      tempMetlId: 1491
+    Add date:
+      position:
+        x: 1024
+        "y": 224
+      tempMetlId: 1492
+    String to Date:
+      position:
+        x: 640
+        "y": 224
+      tempMetlId: 1493
+    Last Known:
+      position:
+        x: 1344
+        "y": 144
+      tempMetlId: 1494
+    Renamer:
+      position:
+        x: 1184
+        "y": 224
+      tempMetlId: 1495
+    Zero Filled:
+      position:
+        x: 1344
+        "y": 64
+      tempMetlId: 1496
+    Rolling Mean:
+      position:
+        x: 1344
+        "y": 224
+      tempMetlId: 1497
+    Linear Backfill:
+      position:
+        x: 1344
+        "y": 384
+      tempMetlId: 1498
+    Rolling Mean coalesced:
+      position:
+        x: 1456
+        "y": 224
+      tempMetlId: 1499
+    Linear Regression:
+      position:
+        x: 1344
+        "y": 304
+      tempMetlId: 1500
+  notes:
+    "1486":
+      position:
+        x: 423
+        "y": 164
+      size:
+        height: 117
+        width: 117
+      theme: "green"
+      content: "Currency of interest"
+    "1485":
+      position:
+        x: 263
+        "y": 162
+      size:
+        height: 118
+        width: 101
+      theme: "green"
+      content: "This is a single VARIANT column"

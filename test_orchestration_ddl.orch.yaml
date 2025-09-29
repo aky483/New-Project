@@ -1,0 +1,375 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "This will be having all the orchestration jobs for DDL"
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Alter Warehouse DEMO_WAREHOUSE"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create Demographic Table:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "Create Demographic Table"
+        createMethod: "Create if not exists"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        table: "DEMOGRAPHIC_RAW"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "AGE"
+          - "VARCHAR"
+          - "20"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "MARITAL_STATUS_CODE"
+          - "VARCHAR"
+          - "5"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "INCOME_DESC"
+          - "VARCHAR"
+          - "40"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "HOMEOWNER_DESC"
+          - "VARCHAR"
+          - "40"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "HH_COMP_DESC"
+          - "VARCHAR"
+          - "50"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "HOUSEHOLD_SIZE_DESC"
+          - "VARCHAR"
+          - "50"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "KIDS_CATEGORY_DESC"
+          - "VARCHAR"
+          - "40"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+          - ""
+        - - "HOUSEHOLD_KEY"
+          - "NUMBER"
+          - "10"
+          - ""
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        - "HOUSEHOLD_KEY"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: "Creating Demographic Table Using Input Columns"
+    Delete Tables DEMOGRAPHIC_RAW:
+      type: "delete-tables"
+      skipped: false
+      parameters:
+        componentName: "Delete Tables DEMOGRAPHIC_RAW"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        targetTable:
+        - "DEMOGRAPHIC_RAW"
+        ignoreMissing: "Yes"
+    Alter Table DEMOGRAPHIC_TABE:
+      type: "alter-table"
+      skipped: false
+      parameters:
+        componentName: "Alter Table DEMOGRAPHIC_TABE"
+        targetTable: "DEMOGRAPHIC_RAW"
+        schema: "DEMO_SCHEMA"
+        database: "DEMO_DATABASE"
+        searchOptimizationService: "On"
+    Create External Table TXNS:
+      type: "create-external-table-sf"
+      skipped: false
+      parameters:
+        componentName: "Create External Table TXNS"
+        createReplace: "Replace"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        newTableName: "TRANSACTIONS"
+        partitionColumns:
+        stageDatabase: "DEMO_DATABASE"
+        stageSchema: "DEMO_SCHEMA"
+        stage: "BANK"
+        relativePath: ""
+        pattern: ".*"
+        format: "DEMO_CSV_FILE_FORMAT"
+    Truncate Table DEMOGRAPHIC_RAW:
+      type: "truncate-table"
+      skipped: false
+      parameters:
+        componentName: "Truncate Table DEMOGRAPHIC_RAW"
+        warehouse: "DEMO_WAREHOUSE"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        targetTable:
+        - "DEMOGRAPHIC_RAW"
+    SQL Script:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "SQL Script"
+        sqlScript: "CREATE OR REPLACE TABLE CAMPAIGN_DESC_RAW\n(\nDESCRIPTION CHAR(10),\t\
+          \nCAMPAIGN\tINT ,\nSTART_DAY\tINT,\nEND_DAY INT,\nPRIMARY KEY (DESCRIPTION),\n\
+          UNIQUE (CAMPAIGN)\n);"
+    TRANSACTIONS TABLE CREATION:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "TRANSACTIONS TABLE CREATION"
+        sqlScript: "CREATE OR REPLACE TABLE TRANSACTIONS\n(\ntrans_id INT,\t\naccount_id\t\
+          INT,\nDate\tDATE,\nType\tVARCHAR(30),\noperation\tVARCHAR(40),\namount\t\
+          INT,\nbalance\tFLOAT,\nPurpose\tVARCHAR(40),\nbank\tVARCHAR(45),\naccount_partner_id\
+          \ INT,\nFOREIGN KEY (account_id) references ACCOUNT(account_id)\n);"
+    DISTRICT TABLE CREATION:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "DISTRICT TABLE CREATION"
+        sqlScript: "CREATE OR REPLACE TABLE DISTRICT\n(\nDistrict_Code INT PRIMARY\
+          \ KEY\t,\nDistrict_Name VARCHAR(100)\t,\nRegion VARCHAR(100)\t,\nNo_of_inhabitants\t\
+          INT,\nNo_of_municipalities_with_inhabitants_less_499 INT,\nNo_of_municipalities_with_inhabitants_500_btw_1999\t\
+          INT,\nNo_of_municipalities_with_inhabitants_2000_btw_9999\tINT,\nNo_of_municipalities_with_inhabitants_less_10000\
+          \ INT,\t\nNo_of_cities\tINT,\nRatio_of_urban_inhabitants\tFLOAT,\nAverage_salary\t\
+          INT,\nNo_of_entrepreneurs_per_1000_inhabitants INT,\nNo_committed_crime_2017\t\
+          INT,\nNo_committed_crime_2018 INT\n);"
+    ACCOUNT TABLE CREATION:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "ACCOUNT TABLE CREATION"
+        sqlScript: "CREATE OR REPLACE TABLE ACCOUNT\n(\naccount_id INT PRIMARY KEY,\n\
+          district_id\tINT,\nfrequency\tVARCHAR(40),\nDate DATE ,\nAccount_Type VARCHAR(100)\
+          \ ,\nCard_Assigned VARCHAR(20),\nFOREIGN KEY (district_id) references DISTRICT(District_Code)\
+          \ \n);"
+    Delete Tables TRANSACTIONS:
+      type: "delete-tables"
+      skipped: false
+      parameters:
+        componentName: "Delete Tables TRANSACTIONS"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        targetTable:
+        - "TRANSACTIONS"
+        ignoreMissing: "Yes"
+    Alter External Table 0:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Alter External Table 0"
+        "2": "DEMO_DATABASE"
+        "3": "DEMO_SCHEMA"
+        "4": "TRANSACTIONS"
+        "5": "Remove"
+        "6":
+        - "/TRANSACTIONS/trnx_16.csv"
+        - "/TRANSACTIONS/trnx_17.csv"
+        - "/TRANSACTIONS/trnx_18.csv"
+    Create Stream member_check:
+      type: "create-stream"
+      skipped: false
+      parameters:
+        componentName: "Create Stream member_check"
+        createReplace: "Replace"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        streamName: "MEMBER_CHECK"
+        tableDatabase: "DEMO_DATABASE"
+        tableSchema: "DEMO_SCHEMA"
+        table: "MEMBERS"
+        appendOnly: "True"
+    Refresh External Table TXNS:
+      type: "refresh-external-table"
+      skipped: false
+      parameters:
+        componentName: "Refresh External Table TXNS"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        targetTable: "TRANSACTIONS"
+        relativeSubpath: ""
+    Create File Format csv_format_matillion:
+      type: "create-file-format"
+      skipped: false
+      parameters:
+        componentName: "Create File Format csv_format_matillion"
+        createReplace: "Create if not exists"
+        database: "DEMO_DATABASE"
+        schema: "DEMO_SCHEMA"
+        fileFormatName: "csv_file_format_matillion"
+        fileType: "XML"
+        compression: "AUTO"
+        ignoreUtf8Errors1: "False"
+        preserveSpace: "False"
+        stripOuterElement: "False"
+        disableSnowflakeData: "False"
+        disableAutoConvert: "False"
+    Alter Warehouse DEMO_WAREHOUSE:
+      type: "alter-warehouse"
+      skipped: false
+      parameters:
+        componentName: "Alter Warehouse DEMO_WAREHOUSE"
+        warehouse: "DEMO_WAREHOUSE"
+        commandType: "Set"
+        properties:
+        - - "WAREHOUSE_SIZE"
+          - "LARGE"
+        - - "MAX_CONCURRENCY_LEVEL"
+          - "10"
+        - - "STATEMENT_QUEUED_TIMEOUT_IN_SECONDS"
+          - "600"
+        - - "AUTO_SUSPEND"
+          - "600"
+    Assign Tag 0:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Assign Tag 0"
+        "2": "DEMO_DATABASE"
+        "3": "DEMO_SCHEMA"
+        "4": "Table"
+        "5": "ACCOUNT"
+        "6":
+    Alter Masking Policy 0:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Alter Masking Policy 0"
+        "2": "[Environment Default]"
+        "3": "[Environment Default]"
+        "4": ""
+        "5": ""
+        "6":
+design:
+  components:
+    Start 0:
+      position:
+        x: -1536
+        "y": -112
+      tempMetlId: 4369
+    Create Demographic Table:
+      position:
+        x: -1072
+        "y": -320
+      tempMetlId: 4659
+    Delete Tables DEMOGRAPHIC_RAW:
+      position:
+        x: -1216
+        "y": -320
+      tempMetlId: 4727
+    Alter Table DEMOGRAPHIC_TABE:
+      position:
+        x: -928
+        "y": -336
+      tempMetlId: 4808
+    Create External Table TXNS:
+      position:
+        x: -1104
+        "y": -96
+      tempMetlId: 4882
+    Truncate Table DEMOGRAPHIC_RAW:
+      position:
+        x: -624
+        "y": -320
+      tempMetlId: 4982
+    SQL Script:
+      position:
+        x: -1072
+        "y": -240
+      tempMetlId: 5057
+    TRANSACTIONS TABLE CREATION:
+      position:
+        x: -736
+        "y": -240
+      tempMetlId: 5153
+    DISTRICT TABLE CREATION:
+      position:
+        x: -512
+        "y": -240
+      tempMetlId: 5181
+    ACCOUNT TABLE CREATION:
+      position:
+        x: -896
+        "y": -240
+      tempMetlId: 5218
+    Delete Tables TRANSACTIONS:
+      position:
+        x: -1312
+        "y": -320
+      tempMetlId: 5371
+    Alter External Table 0:
+      position:
+        x: -128
+        "y": -336
+      tempMetlId: 5645
+    Create Stream member_check:
+      position:
+        x: -144
+        "y": -240
+      tempMetlId: 5954
+    Refresh External Table TXNS:
+      position:
+        x: -896
+        "y": -96
+      tempMetlId: 6369
+    Create File Format csv_format_matillion:
+      position:
+        x: -704
+        "y": -96
+      tempMetlId: 6553
+    Alter Warehouse DEMO_WAREHOUSE:
+      position:
+        x: -1392
+        "y": -112
+      tempMetlId: 6744
+    Assign Tag 0:
+      position:
+        x: -176
+        "y": 32
+      tempMetlId: 6834
+    Alter Masking Policy 0:
+      position:
+        x: 96
+        "y": -64
+      tempMetlId: 6938

@@ -1,0 +1,385 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_batteryelectric_wide:
+      type: "table-input"
+      parameters:
+        componentName: "stg_batteryelectric_wide"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_batteryelectric_wide"
+        columnNames:
+        - "Make"
+        - "Model"
+        - "2022 Q3"
+        - "2022 Q2"
+        - "2022 Q1"
+        - "2021 Q4"
+        - "2021 Q3"
+        - "2021 Q2"
+        - "2021 Q1"
+        - "2020 Q4"
+        - "2020 Q3"
+        - "2020 Q2"
+        - "2020 Q1"
+        - "2019 Q4"
+        - "2019 Q3"
+        - "2019 Q2"
+        - "2019 Q1"
+        - "2018 Q4"
+        - "2018 Q3"
+        - "2018 Q2"
+        - "2018 Q1"
+        - "2017 Q4"
+        - "2017 Q3"
+        - "2017 Q2"
+        - "2017 Q1"
+        - "2016 Q4"
+        - "2016 Q3"
+        - "2016 Q2"
+        - "2016 Q1"
+        - "2015 Q4"
+        - "2015 Q3"
+        - "2015 Q2"
+        - "2015 Q1"
+        - "2014 Q4"
+        - "2014 Q3"
+        - "2014 Q2"
+        - "2014 Q1"
+        - "2013 Q4"
+        - "2013 Q3"
+        - "2013 Q2"
+        - "2013 Q1"
+        - "2012 Q4"
+        - "2012 Q3"
+        - "2012 Q2"
+        - "2012 Q1"
+        - "2011 Q4"
+        - "2011 Q3"
+        - "2011 Q2"
+        - "2011 Q1"
+        - "2010 Q4"
+        - "2010 Q3"
+        - "2010 Q2"
+        - "2010 Q1"
+        timeOffset: ""
+    UNPIVOT - wide to narrow:
+      type: "sql"
+      sources:
+      - "stg_batteryelectric_wide"
+      parameters:
+        componentName: "UNPIVOT - wide to narrow"
+        query: |-
+          SELECT * FROM $T{stg_batteryelectric_wide}
+          UNPIVOT ("Vehicles_String" FOR "Quarter" IN (${jv_col_list}))
+          ORDER BY "Make", "Model", "Quarter"
+    Transpose Columns 0:
+      type: "transpose-columns"
+      sources:
+      - "stg_batteryelectric_wide"
+      parameters:
+        componentName: "Transpose Columns 0"
+        ordinaryColumns:
+        - "Make"
+        - "Model"
+        rowLabelName: "Quarter"
+        outputColumns:
+        - - "Vehicles_String"
+          - "VARCHAR"
+        columnToRowMapping:
+        - - "2022 Q3"
+          - "2022 Q3"
+        - - "2022 Q2"
+          - "2022 Q2"
+        - - "2022 Q1"
+          - "2022 Q1"
+        - - "2021 Q4"
+          - "2021 Q4"
+        - - "2021 Q3"
+          - "2021 Q3"
+        - - "2021 Q2"
+          - "2021 Q2"
+        - - "2021 Q1"
+          - "2021 Q1"
+        - - "2020 Q4"
+          - "2020 Q4"
+        - - "2020 Q3"
+          - "2020 Q3"
+        - - "2020 Q2"
+          - "2020 Q2"
+        - - "2020 Q1"
+          - "2020 Q1"
+        - - "2019 Q4"
+          - "2019 Q4"
+        - - "2019 Q3"
+          - "2019 Q3"
+        - - "2019 Q2"
+          - "2019 Q2"
+        - - "2019 Q1"
+          - "2019 Q1"
+        - - "2018 Q4"
+          - "2018 Q4"
+        - - "2018 Q3"
+          - "2018 Q3"
+        - - "2018 Q2"
+          - "2018 Q2"
+        - - "2018 Q1"
+          - "2018 Q1"
+        - - "2017 Q4"
+          - "2017 Q4"
+        - - "2017 Q3"
+          - "2017 Q3"
+        - - "2017 Q2"
+          - "2017 Q2"
+        - - "2017 Q1"
+          - "2017 Q1"
+        - - "2016 Q4"
+          - "2016 Q4"
+        - - "2016 Q3"
+          - "2016 Q3"
+        - - "2016 Q2"
+          - "2016 Q2"
+        - - "2016 Q1"
+          - "2016 Q1"
+        - - "2015 Q4"
+          - "2015 Q4"
+        - - "2015 Q3"
+          - "2015 Q3"
+        - - "2015 Q2"
+          - "2015 Q2"
+        - - "2015 Q1"
+          - "2015 Q1"
+        - - "2014 Q4"
+          - "2014 Q4"
+        - - "2014 Q3"
+          - "2014 Q3"
+        - - "2014 Q2"
+          - "2014 Q2"
+        - - "2014 Q1"
+          - "2014 Q1"
+        - - "2013 Q4"
+          - "2013 Q4"
+        - - "2013 Q3"
+          - "2013 Q3"
+        - - "2013 Q2"
+          - "2013 Q2"
+        - - "2013 Q1"
+          - "2013 Q1"
+        - - "2012 Q4"
+          - "2012 Q4"
+        - - "2012 Q3"
+          - "2012 Q3"
+        - - "2012 Q2"
+          - "2012 Q2"
+        - - "2012 Q1"
+          - "2012 Q1"
+        - - "2011 Q4"
+          - "2011 Q4"
+        - - "2011 Q3"
+          - "2011 Q3"
+        - - "2011 Q2"
+          - "2011 Q2"
+        - - "2011 Q1"
+          - "2011 Q1"
+        - - "2010 Q4"
+          - "2010 Q4"
+        - - "2010 Q3"
+          - "2010 Q3"
+        - - "2010 Q2"
+          - "2010 Q2"
+        - - "2010 Q1"
+          - "2010 Q1"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "UNPIVOT - wide to narrow"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "TRY_TO_NUMBER(\"Vehicles_String\", '999,999,999')"
+          - "Vehicles"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "Vehicles"
+          - "Not"
+          - "Null"
+          - ""
+        combineCondition: "AND"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "Make"
+          - "Make"
+        - - "Model"
+          - "Model"
+        - - "Quarter"
+          - "Quarter"
+        - - "Vehicles"
+          - "Vehicles"
+        includeInputColumns: "No"
+    Rewrite stg_batteryelectric_narrow:
+      type: "rewrite-table"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Rewrite stg_batteryelectric_narrow"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_batteryelectric_narrow"
+        orderBy:
+    Grid Driven Unpivot:
+      type: "unpivot"
+      sources:
+      - "stg_batteryelectric_wide"
+      parameters:
+        componentName: "Grid Driven Unpivot"
+        columnsToNarrow:
+          fromGrid:
+            variable: "gv_quarters"
+            columns:
+            - "Name"
+        outputNamesColumnName: "Quarter"
+        outputValuesColumnName: "Vehicles_String"
+  variables:
+    jv_col_list:
+      metadata:
+        type: "TEXT"
+        description: |-
+          A comma-separated list of column names, in double-quotes.
+          Normally you would NOT supply a default value in production, because it gets supplied at runtime by the calling job.
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "\"2022 Q3\",\"2022 Q2\",\"2022 Q1\",\"2021 Q4\",\"2021 Q3\",\"\
+        2021 Q2\",\"2021 Q1\",\"2020 Q4\",\"2020 Q3\",\"2020 Q2\",\"2020 Q1\",\"2019\
+        \ Q4\",\"2019 Q3\",\"2019 Q2\",\"2019 Q1\",\"2018 Q4\",\"2018 Q3\",\"2018\
+        \ Q2\",\"2018 Q1\",\"2017 Q4\",\"2017 Q3\",\"2017 Q2\",\"2017 Q1\",\"2016\
+        \ Q4\",\"2016 Q3\",\"2016 Q2\",\"2016 Q1\",\"2015 Q4\",\"2015 Q3\",\"2015\
+        \ Q2\",\"2015 Q1\",\"2014 Q4\",\"2014 Q3\",\"2014 Q2\",\"2014 Q1\",\"2013\
+        \ Q4\",\"2013 Q3\",\"2013 Q2\",\"2013 Q1\",\"2012 Q4\",\"2012 Q3\",\"2012\
+        \ Q2\",\"2012 Q1\",\"2011 Q4\",\"2011 Q3\",\"2011 Q2\",\"2011 Q1\",\"2010\
+        \ Q4\",\"2010 Q3\",\"2010 Q2\",\"2010 Q1\""
+    gv_quarters:
+      metadata:
+        type: "GRID"
+        description: "A list of the quarter names"
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          Name:
+            columnType: "TEXT"
+      defaultValue: []
+design:
+  components:
+    stg_batteryelectric_wide:
+      position:
+        x: 288
+        "y": 416
+      tempMetlId: 1711
+    UNPIVOT - wide to narrow:
+      position:
+        x: 528
+        "y": 416
+      tempMetlId: 1712
+    Transpose Columns 0:
+      position:
+        x: 528
+        "y": 560
+      tempMetlId: 1713
+    Calculator 0:
+      position:
+        x: 688
+        "y": 416
+      tempMetlId: 1714
+    Filter 0:
+      position:
+        x: 784
+        "y": 416
+      tempMetlId: 1715
+    Rename 0:
+      position:
+        x: 880
+        "y": 416
+      tempMetlId: 1716
+    Rewrite stg_batteryelectric_narrow:
+      position:
+        x: 1072
+        "y": 416
+      tempMetlId: 1717
+    Grid Driven Unpivot:
+      position:
+        x: 528
+        "y": 640
+      tempMetlId: 1718
+  notes:
+    "1710":
+      position:
+        x: 997
+        "y": 349
+      size:
+        height: 141
+        width: 209
+      theme: "yellow"
+      content: "This new table will be used in the narrow-to-wide transformation"
+    "1709":
+      position:
+        x: 464
+        "y": 516
+      size:
+        height: 179
+        width: 132
+      theme: "yellow"
+      content: "Alternative methods"
+    "1708":
+      position:
+        x: 661
+        "y": 563
+      size:
+        height: 116
+        width: 337
+      theme: "yellow"
+      content: |-
+        The job variable **jv_col_list** is supplied from the Table Metadata To Grid in the parent Orchestration Job.
+        It has a hardcoded default value just for demonstration.
+
+        The Grid Driven Unpivot component will not validate cleanly unless this job is run from the parent orchestration, which provides the necessary values for the **gv_quarters** grid variable.
+    "1707":
+      position:
+        x: 131
+        "y": 306
+      size:
+        height: 46
+        width: 237
+      theme: "green"
+      content: |-
+        This is a transpose from **wide** to **narrow**
+        I.e. **columns** to **rows** (an UNPIVOT)
+    "1706":
+      position:
+        x: 642
+        "y": 347
+      size:
+        height: 143
+        width: 285
+      theme: "yellow"
+      content: "Remove values that are not numbers"
+    "1705":
+      position:
+        x: 464
+        "y": 348
+      size:
+        height: 143
+        width: 133
+      theme: "yellow"
+      content: "116 rows x 51 quarters = 5916 rows in the narrow layout"

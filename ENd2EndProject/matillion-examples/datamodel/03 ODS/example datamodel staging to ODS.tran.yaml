@@ -1,0 +1,72 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_iot_event:
+      type: "table-input"
+      parameters:
+        componentName: "stg_iot_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_iot_event"
+        columnNames:
+        - "ts"
+        - "equipment"
+        - "temperature"
+        timeOffset: ""
+    ods_iot_event:
+      type: "table-update"
+      sources:
+      - "stg_iot_event"
+      parameters:
+        componentName: "ods_iot_event"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "ods_iot_event"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - |-
+            "target"."equipment" = "input"."equipment"
+            AND "target"."ts" = "input"."ts"
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "temperature"
+          - "temperature"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "ts"
+          - "ts"
+        - - "equipment"
+          - "equipment"
+        - - "temperature"
+          - "temperature"
+design:
+  components:
+    stg_iot_event:
+      position:
+        x: 339
+        "y": 229
+      tempMetlId: 1438
+    ods_iot_event:
+      position:
+        x: 528
+        "y": 224
+      tempMetlId: 1439
+  notes:
+    "1437":
+      position:
+        x: 432
+        "y": 100
+      size:
+        height: 197
+        width: 199
+      theme: "green"
+      content: |-
+        There is both an update and an insert in a Table Update component.
+
+        This is a great way to perform an idempotent change to the ODS.

@@ -1,0 +1,311 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Check variables:
+      type: "unknown-orchestration"
+      transitions:
+        success:
+        - "Recreate Flight table"
+        - "Recreate Airport dimension table"
+      skipped: false
+      parameters:
+        "1": "Check variables"
+        "2": "# Check that the variable examples_schema exists\n# and has a valid\
+          \ default value\n\nif [ -z \"${examples_schema}\" ]\nthen\n\techo \"You\
+          \ must set a default value for examples_schema under Project / Manage Environment\
+          \ Variables\"\n    exit 99\nelse\n\techo \"examples_schema = '${examples_schema}'\"\
+          \nfi\n\n"
+        "3": "360"
+    Recreate Flight table:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Sample Flight Data"
+      skipped: false
+      parameters:
+        componentName: "Recreate Flight table"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "stg_flight_fact_sample"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "yyyy"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "mm"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "dayofmonth"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "tailnum"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "flightnum"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "deptime"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "crsdeptime"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "origin"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "dest"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Sample Flight Data:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Sample Flight Data"
+        sqlScript: |
+          INSERT INTO "${environment_database}"."${examples_schema}"."stg_flight_fact_sample"
+              ("yyyy", "mm", "dayofmonth", "tailnum", "flightnum", "deptime", "crsdeptime", "origin", "dest")
+          VALUES
+              ('2008','1','3','N712SW','335','2003','1955','IAD','TPA'),
+              ('2008','1','3','N772SW','335','2003','1955','IAD','TPA'),
+              ('2008','1','3','N428WN','335','2003','1955','IND','BWI'),
+              ('2008','1','3','N612SW','335','2003','1955','IND','BWI'),
+              ('2008','1','3','N464WN','335','2003','1955','IND','BWI'),
+              ('2008','1','3','N726SW','335','2003','1955','IND','JAX'),
+              ('2008','1','3','N763SW','335','2003','1955','IND','LAS'),
+              ('2008','1','3','N428WN','335','2003','1955','IND','LAS'),
+              ('2008','1','3','N689SW','335','2003','1955','IND','MCI'),
+              ('2008','1','3','N640SW','335','2003','1955','OAK','DEN'),
+              ('2008','1','3','N223WN','335','2003','1955','CBM','GEG'),
+              ('2008','1','3','N777QC','335','2003','1955','OAK','GEG'),
+              ('2008','1','3','N268WN','335','2003','1955','OAK','HOU'),
+              ('2008','1','3','N700GS','335','2003','1955','OAK','HOU'),
+              ('2008','1','3','N473WN','335','2003','1955','OAK','LAS'),
+              ('2008','1','3','N683SW','335','2003','1955','OAK','LAS'),
+              ('2008','1','3','N799SW','335','2003','1955','OAK','LAS'),
+              ('2008','1','3','N787SA','335','2003','1955','OAK','LAS'),
+              ('2008','1','3','N680AA','335','2003','1955','OAK','LAS')
+    Recreate Airport dimension table:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Sample Airport Data"
+      skipped: false
+      parameters:
+        componentName: "Recreate Airport dimension table"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "dim_airport_sample"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "iata"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "airport"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "city"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "state"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "country"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "lat"
+          - "NUMBER"
+          - "12"
+          - "6"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "long"
+          - "NUMBER"
+          - "12"
+          - "6"
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "state_name"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "last_updated"
+          - "TIMESTAMP"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Sample Airport Data:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Sample Airport Data"
+        sqlScript: |
+          INSERT INTO "${environment_database}"."${examples_schema}"."dim_airport_sample"
+              ("iata", "airport", "city", "state", "country", "lat", "long", "state_name", "last_updated")
+          VALUES
+              ('BWI','Baltimore-Washington International','Baltimore','MD','USA',39.17540167,-76.66819833,'Maryland','2020-01-01'),
+              ('GEG','Spokane Intl','Spokane','WA','USA',47.61985556,-117.53384250,'Washington','2020-01-01'),
+              ('DEN','Denver Intl','Denver','CO','USA',39.85840806,-104.66700190,'Colorado','2020-01-01'),
+              ('HOU','William P Hobby','Houston','TX','USA',29.64541861,-95.27888889,'Texas','2020-01-01'),
+              ('IAD','Washington Dulles International','Chantilly','VA','USA',38.94453194,-77.45580972,'Virginia','2020-01-01'),
+              ('IND','Indianapolis International','Indianapolis','IN','USA',39.71732917,-86.29438417,'Indiana','2020-01-01'),
+              ('JAX','Jacksonville International','Jacksonville','FL','USA',30.49405556,-81.68786111,'Florida','2020-01-01'),
+              ('LAS','McCarran International','Las Vegas','NV','USA',36.08036111,-115.15233330,'Nevada','2020-01-01'),
+              ('MCI','Kansas City International','Kansas City','MO','USA',39.29760528,-94.71390556,'Missouri','2020-01-01'),
+              ('OAK','Metropolitan Oakland International','Oakland','CA','USA',37.72129083,-122.22071670,'California','2020-01-01'),
+              ('TPA','Tampa International','Tampa','FL','USA',27.97547222,-82.53325000,'Florida','2020-01-01')
+design:
+  components:
+    Start 0:
+      position:
+        x: 0
+        "y": 0
+      tempMetlId: 1027
+    Check variables:
+      position:
+        x: 160
+        "y": 0
+      tempMetlId: 1028
+    Recreate Flight table:
+      position:
+        x: 320
+        "y": -80
+      tempMetlId: 1029
+    Sample Flight Data:
+      position:
+        x: 480
+        "y": -80
+      tempMetlId: 1030
+    Recreate Airport dimension table:
+      position:
+        x: 320
+        "y": 80
+      tempMetlId: 1031
+    Sample Airport Data:
+      position:
+        x: 480
+        "y": 80
+      tempMetlId: 1032
+  notes:
+    "1026":
+      position:
+        x: 241
+        "y": 139
+      size:
+        height: 123
+        width: 156
+      theme: "green"
+      content: |-
+        NULL values are permitted in all columns except the business key.
+
+        This enables the addition of late arriving dimension values where the only thing that is known is the business key.
+    "1025":
+      position:
+        x: 6
+        "y": -136
+      size:
+        height: 40
+        width: 202
+      theme: "green"
+      content: "This creates a small set of hardcoded sample data for demonstration"

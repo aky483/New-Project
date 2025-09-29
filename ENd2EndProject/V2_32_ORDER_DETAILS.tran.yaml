@@ -1,0 +1,95 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    src table:
+      type: "table-input"
+      parameters:
+        componentName: "src table"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB"
+        targetTable: "ORDER_DETAILS"
+        columnNames:
+        - "ORDER_DETAILS_ID"
+        - "ORDER_ID"
+        - "ORDER_DATE"
+        - "ORDER_TIME"
+        - "ITEM_ID"
+        timeOffset: ""
+    Distinct 0:
+      type: "distinct"
+      sources:
+      - "src table"
+      parameters:
+        componentName: "Distinct 0"
+        columns:
+        - "ORDER_DETAILS_ID"
+        - "ORDER_ID"
+        - "ORDER_DATE"
+        - "ORDER_TIME"
+        - "ITEM_ID"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Distinct 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "ORDER_DETAILS_ID"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ORDER_ID"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ORDER_DATE"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ORDER_TIME"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ITEM_ID"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ITEM_ID"
+          - "Not"
+          - "Like"
+          - "NULL"
+        combineCondition: "AND"
+    Create View 0:
+      type: "create-view"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Create View 0"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB_DES"
+        viewName: "ORDER_DETAILS_VIEW"
+        secureView: "No"
+        viewType: "Standard"
+design:
+  components:
+    src table:
+      position:
+        x: 217
+        "y": 145
+      tempMetlId: 4273
+    Distinct 0:
+      position:
+        x: 343
+        "y": 150
+      tempMetlId: 4274
+    Filter 0:
+      position:
+        x: 470
+        "y": 146
+      tempMetlId: 4275
+    Create View 0:
+      position:
+        x: 613
+        "y": 139
+      tempMetlId: 4276

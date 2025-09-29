@@ -1,0 +1,253 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Data Transfer:
+      type: "data-transfer-object"
+      transitions:
+        success:
+        - "Recreate raw_iot_event"
+      skipped: false
+      parameters:
+        componentName: "Data Transfer"
+        sourceType: "HTTPS"
+        performCertificateValidation: "No"
+        sourceUrl3: "${prvt_sample_data_url}"
+        sourceUsername1: ""
+        sourcePassword1: ""
+        unpackZipFile: "No"
+        targetType: "S3"
+        gzipData: "No"
+        targetObjectName: "matillion-examples/datamodel/structured-postprocess.csv.gz"
+        targetUrl2: "s3://${examples_storage}"
+        accessControlListOptions: ""
+        encryption: "None"
+    Recreate raw_iot_event:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "S3 Load"
+      skipped: false
+      parameters:
+        componentName: "Recreate raw_iot_event"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "raw_iot_event"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "timeunits"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "base"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "equipment"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "id"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "tempunits"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "timestamp"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "temperature"
+          - "VARCHAR"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    S3 Load:
+      type: "s3-load"
+      skipped: false
+      parameters:
+        componentName: "S3 Load"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://${examples_storage}"
+        pattern: "matillion-examples/datamodel/structured-postprocess.csv.gz"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "raw_iot_event"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ","
+        skipHeader: "1"
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: ""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "False"
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Data Transfer"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        timeout: "360"
+  variables:
+    prvt_sample_data_url:
+      metadata:
+        type: "TEXT"
+        description: "URL of the sample data file"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "https://s3.eu-west-1.amazonaws.com/devrel.matillion.com/data/structured/audio/structured-postprocess.csv.gz"
+design:
+  components:
+    Start 0:
+      position:
+        x: -352
+        "y": 16
+      tempMetlId: 1282
+    Data Transfer:
+      position:
+        x: -64
+        "y": 16
+      tempMetlId: 1283
+    Recreate raw_iot_event:
+      position:
+        x: 112
+        "y": 16
+      tempMetlId: 1284
+    S3 Load:
+      position:
+        x: 256
+        "y": 16
+      tempMetlId: 1285
+    Check variables:
+      position:
+        x: -208
+        "y": 16
+      tempMetlId: 1286
+  notes:
+    "1249":
+      position:
+        x: -113
+        "y": -62
+      size:
+        height: 146
+        width: 101
+      theme: "green"
+      content: "Copy source data into cloud storage"
+    "1250":
+      position:
+        x: 43
+        "y": -64
+      size:
+        height: 148
+        width: 278
+      theme: "green"
+      content: |-
+        Load the data into the **raw_iot_event** table.
+
+        Everything else is derived from this data.
+    "1281":
+      position:
+        x: -747
+        "y": -42
+      size:
+        height: 104
+        width: 346
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+
+        **examples_schema** (name of a Snowflake schema)
+    "1280":
+      position:
+        x: -746
+        "y": -293
+      size:
+        height: 150
+        width: 944
+      theme: "green"
+      content: |
+        Start here! Run this job first, then run the Staging, ODS, 3NF, Data Vault, Star and Aggregate jobs in turn to process the data through the different data layers and models.
+
+        This folder contains the jobs and data from [https://www.matillion.com/resources/developer-relations/data-vault-vs-star-schema-vs-third-normal-form-which-data-model-to-use](https://www.matillion.com/resources/developer-relations/data-vault-vs-star-schema-vs-third-normal-form-which-data-model-to-use) and [https://www.matillion.com/resources/developer-relations/looking-at-structured-unstructured-and-semi-structured-data-with-examples](https://www.matillion.com/resources/developer-relations/looking-at-structured-unstructured-and-semi-structured-data-with-examples)
+
+        Logical data layers are discussed in [https://www.matillion.com/resources/developer-relations/multi-tier-data-architectures-with-matillion-etl](https://www.matillion.com/resources/developer-relations/multi-tier-data-architectures-with-matillion-etl)
+
+        Thinking about data models and data layers is a good way to become more data oriented.
+        More on that subject in this mini series [https://www.matillion.com/resources/developer-relations/data-oriented-programming-needs-data-integration](https://www.matillion.com/resources/developer-relations/data-oriented-programming-needs-data-integration)

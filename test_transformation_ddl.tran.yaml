@@ -1,0 +1,270 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "This will be having all the transformation jobs for DDL"
+  components:
+    BANK TXNS INPUT TABLE:
+      type: "table-input"
+      parameters:
+        componentName: "BANK TXNS INPUT TABLE"
+        database: "DEMODATABASE"
+        schema: "DEMOSCHEMA"
+        targetTable: "TRANSACTIONS"
+        columnNames:
+        - "TRANS_ID"
+        - "ACCOUNT_ID"
+        - "DATE"
+        - "TYPE"
+        - "OPERATION"
+        - "AMOUNT"
+        - "BALANCE"
+        - "PURPOSE"
+        - "BANK"
+        - "ACCOUNT_PARTERN_ID"
+        timeOffset: ""
+    Aggregate ACCOUNT_ID:
+      type: "aggregate"
+      sources:
+      - "BANK TXNS INPUT TABLE"
+      parameters:
+        componentName: "Aggregate ACCOUNT_ID"
+        groupings:
+        - "ACCOUNT_ID"
+        aggregations:
+        - - "TRANS_ID"
+          - "Count Distinct"
+        - - "BALANCE"
+          - "Sum"
+        groupingType: "Group By"
+    Aggregate TXN_YR:
+      type: "aggregate"
+      sources:
+      - "Calculate TXN_YEAR"
+      parameters:
+        componentName: "Aggregate TXN_YR"
+        groupings:
+        - "TXN_YEAR"
+        aggregations:
+        - - "TRANS_ID"
+          - "Count Distinct"
+        - - "BALANCE"
+          - "Sum"
+        groupingType: "Group By"
+    Calculate TXN_YEAR:
+      type: "calculator"
+      sources:
+      - "BANK TXNS INPUT TABLE"
+      parameters:
+        componentName: "Calculate TXN_YEAR"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "YEAR(\"DATE\")"
+          - "TXN_YEAR"
+    Aggregate  BANK:
+      type: "aggregate"
+      sources:
+      - "Calculate TXN_YEAR_BANK"
+      parameters:
+        componentName: "Aggregate  BANK"
+        groupings:
+        - "BANK"
+        - "TXN_YEAR"
+        - "TXN_QTR"
+        - "TXN_MNTH"
+        aggregations:
+        - - "TRANS_ID"
+          - "Count Distinct"
+        - - "BALANCE"
+          - "Sum"
+        groupingType: "Group By"
+    Calculate TXN_YEAR_BANK:
+      type: "calculator"
+      sources:
+      - "BANK TXNS INPUT TABLE"
+      parameters:
+        componentName: "Calculate TXN_YEAR_BANK"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "YEAR(\"DATE\")"
+          - "TXN_YEAR"
+        - - "QUARTER(\"DATE\")"
+          - "TXN_QTR"
+        - - "MONTH(\"DATE\")"
+          - "TXN_MNTH"
+    Rename Components:
+      type: "rename"
+      sources:
+      - "Calculate Balance"
+      parameters:
+        componentName: "Rename Components"
+        columnMapping:
+        - - "BANK"
+          - "BANK"
+        - - "TXN_YEAR"
+          - "YEAR"
+        - - "count_distinct_TRANS_ID"
+          - "Total Txns"
+        - - "ROUND_BALANCE"
+          - "Total Balance"
+        includeInputColumns: "No"
+    Calculate Balance:
+      type: "calculator"
+      sources:
+      - "Aggregate  BANK"
+      parameters:
+        componentName: "Calculate Balance"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "CAST(CAST(\"sum_BALANCE\"  AS NUMERIC(16,0)) AS bigint)"
+          - "ROUND_BALANCE"
+    Next Day Balance:
+      type: "lead-lag"
+      sources:
+      - "BANK TXNS INPUT TABLE"
+      parameters:
+        componentName: "Next Day Balance"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "ACCOUNT_ID"
+        orderingsWithinPartitions:
+        - - "DATE"
+          - "Asc"
+        functions:
+        - - "Lead"
+          - "BALANCE"
+          - "1"
+          - "NEXT_DAY_BALANCE"
+        ignoreNulls: "Yes"
+    Previous Day Balance:
+      type: "lead-lag"
+      sources:
+      - "BANK TXNS INPUT TABLE"
+      parameters:
+        componentName: "Previous Day Balance"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "ACCOUNT_ID"
+        orderingsWithinPartitions:
+        - - "DATE"
+          - "Desc"
+        functions:
+        - - "Lag"
+          - "BALANCE"
+          - "1"
+          - "PREV_DAY_BALANCE"
+        ignoreNulls: "Yes"
+    Rename:
+      type: "rename"
+      sources:
+      - "Aggregate ACCOUNT_ID"
+      parameters:
+        componentName: "Rename"
+        columnMapping:
+        - - "ACCOUNT_ID"
+          - "ACCOUNT_ID"
+        - - "count_distinct_TRANS_ID"
+          - "Total_Txns"
+        - - "sum_BALANCE"
+          - "Total_Balance"
+        includeInputColumns: "No"
+    Rewrite Table:
+      type: "rewrite-table"
+      sources:
+      - "Rename Components"
+      parameters:
+        componentName: "Rewrite Table"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "Banking_KPI"
+        orderBy:
+        - - "YEAR"
+          - "DESCENDING"
+      postProcessing:
+        updateOutputMessage:
+        updateScalarVariables:
+    Table Output:
+      type: "table-output"
+      sources:
+      - "Rename Components"
+      parameters:
+        componentName: "Table Output"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable:
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        orderBy:
+        outputMode: "Append"
+      postProcessing:
+        updateOutputMessage:
+        updateScalarVariables:
+design:
+  components:
+    BANK TXNS INPUT TABLE:
+      position:
+        x: -2030
+        "y": -200
+      tempMetlId: 5754
+    Aggregate ACCOUNT_ID:
+      position:
+        x: -1110
+        "y": -480
+      tempMetlId: 8142
+    Aggregate TXN_YR:
+      position:
+        x: -820
+        "y": -340
+      tempMetlId: 8253
+    Calculate TXN_YEAR:
+      position:
+        x: -1050
+        "y": -340
+      tempMetlId: 8323
+    Aggregate  BANK:
+      position:
+        x: -1120
+        "y": -120
+      tempMetlId: 8501
+    Calculate TXN_YEAR_BANK:
+      position:
+        x: -1450
+        "y": -130
+      tempMetlId: 8586
+    Rename Components:
+      position:
+        x: -670
+        "y": -120
+      tempMetlId: 8666
+    Calculate Balance:
+      position:
+        x: -850
+        "y": -120
+      tempMetlId: 8764
+    Next Day Balance:
+      position:
+        x: -1960
+        "y": 70
+      tempMetlId: 9072
+    Previous Day Balance:
+      position:
+        x: -1700
+        "y": 0
+      tempMetlId: 9204
+    Rename:
+      position:
+        x: -950
+        "y": -480
+      tempMetlId: 9205
+    Rewrite Table:
+      position:
+        x: -510
+        "y": -120
+      tempMetlId: 9206
+    Table Output:
+      position:
+        x: -510
+        "y": -240
+      tempMetlId: 9207

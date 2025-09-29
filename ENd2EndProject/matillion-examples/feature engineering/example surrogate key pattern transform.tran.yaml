@@ -1,0 +1,371 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "Demonstrates the surrogate key generator pattern"
+  components:
+    dim_surrogate_key_example:
+      type: "table-input"
+      parameters:
+        componentName: "dim_surrogate_key_example"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_surrogate_key_example"
+        columnNames:
+        - "sk"
+        - "bus_key_part1"
+        - "bus_key_part2"
+        - "some_attribute"
+        timeOffset: ""
+    Fixed Flow 0:
+      type: "fixed-flow"
+      parameters:
+        componentName: "Fixed Flow 0"
+        columns:
+        - - "bus_key_part1"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "bus_key_part2"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "some_attribute"
+          - "VARCHAR"
+          - "40"
+          - ""
+        values:
+        - - "AAA"
+          - "x"
+          - "somevalue"
+        - - "New"
+          - "1"
+          - "new value"
+        - - "New"
+          - "2"
+          - "another new value"
+    Business Key:
+      type: "rename"
+      sources:
+      - "dim_surrogate_key_example"
+      parameters:
+        componentName: "Business Key"
+        columnMapping:
+        - - "bus_key_part1"
+          - "bus_key_part1"
+        - - "bus_key_part2"
+          - "bus_key_part2"
+        - - "some_attribute"
+          - "some_attribute"
+        includeInputColumns: "No"
+    Join 0:
+      type: "join"
+      sources:
+      - "Business Key"
+      - "Fixed Flow 0"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "Fixed Flow 0"
+        mainTableAlias: "n"
+        joins:
+        - - "Business Key"
+          - "e"
+          - "Left"
+        joinExpressions:
+        - - |-
+            "n"."bus_key_part1" = "e"."bus_key_part1"
+            AND "n"."bus_key_part2" = "e"."bus_key_part2"
+          - "n_Left_e"
+        columnMappings:
+        - - "n.bus_key_part1"
+          - "bus_key_part1"
+        - - "n.bus_key_part2"
+          - "bus_key_part2"
+        - - "n.some_attribute"
+          - "some_attribute"
+        - - "e.bus_key_part1"
+          - "existing_bus_key_part1"
+        - - "e.bus_key_part2"
+          - "existing_bus_key_part2"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "existing_bus_key_part1"
+          - "Is"
+          - "Null"
+          - ""
+        - - "existing_bus_key_part2"
+          - "Is"
+          - "Null"
+          - ""
+        combineCondition: "AND"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "bus_key_part1"
+          - "bus_key_part1"
+        - - "bus_key_part2"
+          - "bus_key_part2"
+        - - "some_attribute"
+          - "some_attribute"
+        includeInputColumns: "No"
+    Max SK:
+      type: "aggregate"
+      sources:
+      - "dim_surrogate_key_example"
+      parameters:
+        componentName: "Max SK"
+        groupings:
+        aggregations:
+        - - "sk"
+          - "Max"
+        groupingType: "Group By"
+    Handle NULL:
+      type: "calculator"
+      sources:
+      - "Max SK"
+      parameters:
+        componentName: "Handle NULL"
+        includeInputColumns: "No"
+        calculations:
+        - - "COALESCE(\"max_sk\", 0)"
+          - "sk_base"
+    Rank 0:
+      type: "rank"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        orderingWithinPartitions:
+        - - "bus_key_part1"
+          - "Asc"
+        - - "bus_key_part2"
+          - "Asc"
+        functions:
+        - - "Row Number"
+          - "rowseq"
+    Join for new SK baseline:
+      type: "join"
+      sources:
+      - "Rank 0"
+      - "Handle NULL"
+      parameters:
+        componentName: "Join for new SK baseline"
+        mainTable: "Rank 0"
+        mainTableAlias: "n"
+        joins:
+        - - "Handle NULL"
+          - "baseline"
+          - "Inner"
+        joinExpressions:
+        - - "1 = 1"
+          - "n_Inner_baseline"
+        columnMappings:
+        - - "n.bus_key_part1"
+          - "bus_key_part1"
+        - - "n.bus_key_part2"
+          - "bus_key_part2"
+        - - "n.some_attribute"
+          - "some_attribute"
+        - - "n.rowseq"
+          - "rowseq"
+        - - "baseline.sk_base"
+          - "sk_base"
+    Add SK:
+      type: "calculator"
+      sources:
+      - "Join for new SK baseline"
+      parameters:
+        componentName: "Add SK"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "\"sk_base\" + \"rowseq\""
+          - "sk"
+    Rename 1:
+      type: "rename"
+      sources:
+      - "Add SK"
+      parameters:
+        componentName: "Rename 1"
+        columnMapping:
+        - - "sk"
+          - "sk"
+        - - "bus_key_part1"
+          - "bus_key_part1"
+        - - "bus_key_part2"
+          - "bus_key_part2"
+        - - "some_attribute"
+          - "some_attribute"
+        includeInputColumns: "No"
+    dim_surrogate_key_example 0:
+      type: "table-output"
+      sources:
+      - "Rename 1"
+      parameters:
+        componentName: "dim_surrogate_key_example 0"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_surrogate_key_example"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "sk"
+          - "sk"
+        - - "bus_key_part1"
+          - "bus_key_part1"
+        - - "bus_key_part2"
+          - "bus_key_part2"
+        - - "some_attribute"
+          - "some_attribute"
+        orderBy:
+        outputMode: "Append"
+design:
+  components:
+    dim_surrogate_key_example:
+      position:
+        x: 445
+        "y": 295
+      tempMetlId: 1170
+    Fixed Flow 0:
+      position:
+        x: 496
+        "y": 80
+      tempMetlId: 1172
+    Business Key:
+      position:
+        x: 704
+        "y": 224
+      tempMetlId: 1173
+    Join 0:
+      position:
+        x: 832
+        "y": 160
+      tempMetlId: 1174
+    Filter 0:
+      position:
+        x: 939
+        "y": 155
+      tempMetlId: 1175
+    Rename 0:
+      position:
+        x: 1056
+        "y": 160
+      tempMetlId: 1176
+    Max SK:
+      position:
+        x: 832
+        "y": 352
+      tempMetlId: 1177
+    Handle NULL:
+      position:
+        x: 944
+        "y": 352
+      tempMetlId: 1178
+    Rank 0:
+      position:
+        x: 1165
+        "y": 155
+      tempMetlId: 1179
+    Join for new SK baseline:
+      position:
+        x: 1296
+        "y": 224
+      tempMetlId: 1180
+    Add SK:
+      position:
+        x: 1408
+        "y": 224
+      tempMetlId: 1181
+    Rename 1:
+      position:
+        x: 1520
+        "y": 224
+      tempMetlId: 1182
+    dim_surrogate_key_example 0:
+      position:
+        x: 1664
+        "y": 224
+      tempMetlId: 1183
+  notes:
+    "1169":
+      position:
+        x: 1115
+        "y": 376
+      size:
+        height: 118
+        width: 693
+      theme: "yellow"
+      content: |-
+        This job is an example of data having "state".
+
+        - When you run it for the **first** time, two new records will be added.
+        - When you run it a **subsequent** time, there is nothing more to add
+
+        More details at [https://www.matillion.com/resources/developer-relations/data-has-state-data-functions-and-design-patterns](https://www.matillion.com/resources/developer-relations/data-has-state-data-functions-and-design-patterns)
+    "1168":
+      position:
+        x: 1576
+        "y": 150
+      size:
+        height: 132
+        width: 172
+      theme: "green"
+      content: "Append"
+    "1167":
+      position:
+        x: 1235
+        "y": 151
+      size:
+        height: 132
+        width: 323
+      theme: "green"
+      content: "Generate new SKs"
+    "1166":
+      position:
+        x: 786
+        "y": 264
+      size:
+        height: 137
+        width: 216
+      theme: "green"
+      content: "This generates the starting value for new surrogate keys, by finding\
+        \ the highest one that already exists"
+    "1165":
+      position:
+        x: 786
+        "y": 82
+      size:
+        height: 137
+        width: 216
+      theme: "green"
+      content: |-
+        This is an anti-join.
+        It removes any new data where the business key already exists.
+    "1164":
+      position:
+        x: 360
+        "y": 23
+      size:
+        height: 121
+        width: 257
+      theme: "green"
+      content: "New data"
+    "1163":
+      position:
+        x: 360
+        "y": 231
+      size:
+        height: 121
+        width: 257
+      theme: "green"
+      content: "Existing data"

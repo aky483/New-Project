@@ -1,0 +1,251 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create norm_equipment"
+        - "Create norm_bubble_event_seq"
+        - "Create norm_fan_status"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create norm_equipment:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Create norm_equipment"
+        createMethod: "Create if not exists"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "norm_equipment"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "equipment_id"
+          - "VARCHAR"
+          - "64"
+          - ""
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "name"
+          - "VARCHAR"
+          - "256"
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        - - "fan_status_code"
+          - "NUMBER"
+          - "6"
+          - "0"
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        - "equipment_id"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create norm_bubble_event:
+      type: "sql-script"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Create norm_bubble_event"
+        sqlScript: "CREATE TABLE IF NOT EXISTS \"${environment_database}\".\"${examples_schema}\"\
+          .\"norm_bubble_event\" (\n\t\"id\" NUMBER(9,0) NOT NULL UNIQUE\n      DEFAULT\
+          \ \"${environment_database}\".\"${examples_schema}\".\"norm_bubble_event_seq\"\
+          .NEXTVAL,\n\t\"equipment_id\" VARCHAR(64) NOT NULL,\n\t\"ts\" TIMESTAMP_NTZ\
+          \ NOT NULL,\n\tPRIMARY KEY (\n\t\t\"id\"\n\t)\n)"
+    Create norm_fan_status:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Master data"
+      skipped: false
+      parameters:
+        componentName: "Create norm_fan_status"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "norm_fan_status"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "fan_status_code"
+          - "NUMBER"
+          - "6"
+          - "0"
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "name"
+          - "VARCHAR"
+          - "256"
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        - "fan_status_code"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create norm_bubble_event_seq:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Create norm_bubble_event"
+      skipped: false
+      parameters:
+        componentName: "Create norm_bubble_event_seq"
+        sqlScript: |
+          CREATE SEQUENCE IF NOT EXISTS "${environment_database}"."${examples_schema}"."norm_bubble_event_seq";
+    Master data:
+      type: "sql-script"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Master data"
+        sqlScript: |-
+          INSERT INTO "${environment_database}"."${examples_schema}"."norm_fan_status"
+          WITH data AS (SELECT ARRAY_CONSTRUCT('normal', 'malfunctioning', 'unpowered') AS "statusname")
+          SELECT 1000 + ROW_NUMBER() OVER (ORDER BY value) AS id, value
+          FROM data,
+          LATERAL FLATTEN (input => "statusname") x
+          UNION ALL SELECT -1, CAST('Unknown' AS VARIANT)
+    And 0:
+      type: "and"
+      transitions:
+        unconditional:
+        - "example datamodel ODS to 3NF 0"
+      skipped: false
+      parameters:
+        componentName: "And 0"
+    example datamodel ODS to 3NF 0:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "example datamodel ODS to 3NF 0"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/04 3NF/example\
+          \ datamodel ODS to 3NF"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Start 0:
+      position:
+        x: -368
+        "y": 48
+      tempMetlId: 1205
+    Create norm_equipment:
+      position:
+        x: -16
+        "y": -112
+      tempMetlId: 1206
+    Create norm_bubble_event:
+      position:
+        x: 144
+        "y": 47
+      tempMetlId: 1207
+    Create norm_fan_status:
+      position:
+        x: -16
+        "y": 207
+      tempMetlId: 1208
+    Create norm_bubble_event_seq:
+      position:
+        x: -16
+        "y": 47
+      tempMetlId: 1209
+    Master data:
+      position:
+        x: 144
+        "y": 207
+      tempMetlId: 1210
+    And 0:
+      position:
+        x: 400
+        "y": 48
+      tempMetlId: 1211
+    example datamodel ODS to 3NF 0:
+      position:
+        x: 512
+        "y": 48
+      tempMetlId: 1212
+  notes:
+    "1204":
+      position:
+        x: -732
+        "y": -199
+      size:
+        height: 164
+        width: 403
+      theme: "green"
+      content: |-
+        Run this job after completing 03 ODS``
+
+        This is an example of an ODS-to-3NF data transformation.
+
+        3NF data structures represent the data in the most highly structured way. Data is converted from its ODS model into this centralized, unified, subject-oriented model. More discussion on this at [https://www.matillion.com/resources/developer-relations/database-schema-types-examples-and-benefits](https://www.matillion.com/resources/developer-relations/database-schema-types-examples-and-benefits)
+
+        An 3NF layer should contain ``all`` the data from ``all the relevant source systems.
+    "1203":
+      position:
+        x: -614
+        "y": 127
+      size:
+        height: 163
+        width: 303
+      theme: "green"
+      content: |-
+        If you look at the data in the raw, staging or ODS tables (raw_iot_event, stg_iot_event or ods_iot_event) you will see a lot of duplicated values.
+
+        These three 3rd Normal Form tables contain the same data but they are **subject oriented**, which makes it more efficient and less vulnerable to problems.
+
+        These tables should not often get dropped and recreated, so the option here is usually "Create if not exists"
+    "1202":
+      position:
+        x: -110
+        "y": -166
+      size:
+        height: 107
+        width: 195
+      theme: "green"
+      content: "Create the **norm_equipment** table"
+    "1201":
+      position:
+        x: -110
+        "y": 138
+      size:
+        height: 129
+        width: 381
+      theme: "green"
+      content: |-
+        Create **norm_fan_status**.
+        It contains fixed master data, so it is fine to recreate every time
+    "1151":
+      position:
+        x: -112
+        "y": -17
+      size:
+        height: 123
+        width: 383
+      theme: "green"
+      content: "Create **norm_bubble_event** with a primary key defined by a SEQUENCE"

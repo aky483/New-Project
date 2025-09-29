@@ -1,0 +1,243 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    All flights:
+      type: "table-input"
+      parameters:
+        componentName: "All flights"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_training_flights"
+        columnNames:
+        - "flight_date"
+        - "crs_departure_time"
+        - "arrival_time"
+        - "crs_arrival_time"
+        - "flight_number"
+        - "origin"
+        - "destination"
+        - "actual_elapsed_time"
+        - "airtime"
+        timeOffset: ""
+    us_holiday_observance:
+      type: "table-input"
+      parameters:
+        componentName: "us_holiday_observance"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "us_holiday_observance"
+        columnNames:
+        - "CalendarDate"
+        - "Observance"
+        timeOffset: ""
+    Fed Holidays:
+      type: "join"
+      sources:
+      - "All flights"
+      - "us_holiday_observance"
+      parameters:
+        componentName: "Fed Holidays"
+        mainTable: "All flights"
+        mainTableAlias: "f"
+        joins:
+        - - "us_holiday_observance"
+          - "ob"
+          - "Left"
+        joinExpressions:
+        - - "\"f\".\"flight_date\" = \"ob\".\"CalendarDate\""
+          - "f_Left_ob"
+        columnMappings:
+        - - "f.flight_date"
+          - "flight_date"
+        - - "f.crs_departure_time"
+          - "crs_departure_time"
+        - - "f.arrival_time"
+          - "arrival_time"
+        - - "f.crs_arrival_time"
+          - "crs_arrival_time"
+        - - "f.flight_number"
+          - "flight_number"
+        - - "f.airtime"
+          - "airtime"
+        - - "f.origin"
+          - "origin"
+        - - "f.destination"
+          - "destination"
+        - - "f.actual_elapsed_time"
+          - "actual_elapsed_time"
+        - - "ob.Observance"
+          - "Observance"
+    Business Rules:
+      type: "filter"
+      sources:
+      - "Fed Holidays"
+      parameters:
+        componentName: "Business Rules"
+        filterConditions:
+        - - "arrival_time"
+          - "Not"
+          - "Null"
+          - ""
+        - - "crs_arrival_time"
+          - "Not"
+          - "Null"
+          - ""
+        - - "airtime"
+          - "Is"
+          - "Greater than"
+          - "0"
+        combineCondition: "AND"
+    Binning:
+      type: "calculator"
+      sources:
+      - "Business Rules"
+      parameters:
+        componentName: "Binning"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "60 * CAST((\"crs_arrival_time\" - MOD(\"crs_arrival_time\", 100)) / 100\
+            \ AS INTEGER) + MOD(\"crs_arrival_time\", 100)"
+          - "crs_arrival_mpm"
+        - - "60 * CAST((\"arrival_time\" - MOD(\"arrival_time\", 100)) / 100 AS INTEGER)\
+            \ + MOD(\"arrival_time\", 100)"
+          - "arrival_mpm"
+        - - |-
+            CASE
+                 /* Flights due to arrive late evening and actually arriving next day */
+                 WHEN "arrival_mpm" - "crs_arrival_mpm" < -500
+                 THEN "arrival_mpm" - "crs_arrival_mpm" + 1440
+                 /* Flights due to arrive early morning but actually arriving the evening of the day before */
+                 WHEN "arrival_mpm" - "crs_arrival_mpm" > 1200
+                 THEN "arrival_mpm" - "crs_arrival_mpm" - 1440
+                 /* For most flights the day is the same */
+                 ELSE "arrival_mpm" - "crs_arrival_mpm"
+            END
+          - "DelayMinutes"
+        - - |-
+            CASE WHEN "DelayMinutes" >= 45 THEN 'Large Delay'
+                 WHEN "DelayMinutes" >= 15 THEN 'Medium Delay'
+                 ELSE 'On Time'
+            END
+          - "LatenessCategory"
+        - - |-
+            CASE WHEN "Observance" IS NULL THEN 'No Holiday'
+                 ELSE 'Holiday'
+            END
+          - "HolidayCategory"
+    Top level aggregation:
+      type: "aggregate"
+      sources:
+      - "Binning"
+      parameters:
+        componentName: "Top level aggregation"
+        groupings:
+        - "LatenessCategory"
+        - "HolidayCategory"
+        aggregations:
+        - - "flight_date"
+          - "Count"
+        groupingType: "Group By"
+    Flight delay analysis - granular data (view):
+      type: "create-view"
+      sources:
+      - "Binning"
+      parameters:
+        componentName: "Flight delay analysis - granular data (view)"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "v_flight_delay_analysis"
+        secureView: "No"
+        viewType: "Standard"
+    Proportions:
+      type: "window-calculation"
+      sources:
+      - "Top level aggregation"
+      parameters:
+        componentName: "Proportions"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "HolidayCategory"
+        orderingWithinPartitions:
+        functions:
+        - - "Sum"
+          - "count_flight_date"
+          - "CountByHolidayCategory"
+    Flight delay analysis - summary data:
+      type: "rewrite-table"
+      sources:
+      - "Proportions"
+      parameters:
+        componentName: "Flight delay analysis - summary data"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "summary_flight_delay"
+        orderBy:
+design:
+  components:
+    All flights:
+      position:
+        x: 449
+        "y": 378
+      tempMetlId: 1144
+    us_holiday_observance:
+      position:
+        x: 609
+        "y": 218
+      tempMetlId: 1145
+    Fed Holidays:
+      position:
+        x: 609
+        "y": 378
+      tempMetlId: 1146
+    Business Rules:
+      position:
+        x: 737
+        "y": 298
+      tempMetlId: 1147
+    Binning:
+      position:
+        x: 849
+        "y": 298
+      tempMetlId: 1148
+    Top level aggregation:
+      position:
+        x: 1009
+        "y": 218
+      tempMetlId: 1149
+    Flight delay analysis - granular data (view):
+      position:
+        x: 1009
+        "y": 378
+      tempMetlId: 1150
+    Proportions:
+      position:
+        x: 1136
+        "y": 224
+      tempMetlId: 1152
+    Flight delay analysis - summary data:
+      position:
+        x: 1280
+        "y": 224
+      tempMetlId: 1153
+  notes:
+    "1143":
+      position:
+        x: 286
+        "y": 194
+      size:
+        height: 78
+        width: 143
+      theme: "yellow"
+      content: "Run the \"example contingency table setup\" job first to create the\
+        \ database objects"
+    "1142":
+      position:
+        x: 519
+        "y": 169
+      size:
+        height: 255
+        width: 395
+      theme: "green"
+      content: "These are the business rules and definitions that need to be shared"

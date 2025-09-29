@@ -1,0 +1,124 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_worldclockapi_utc:
+      type: "table-input"
+      parameters:
+        componentName: "stg_worldclockapi_utc"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_worldclockapi_utc"
+        columnNames:
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "timeZoneName"
+        timeOffset: ""
+    Rank 0:
+      type: "rank"
+      sources:
+      - "stg_worldclockapi_utc"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "timeZoneName"
+        orderingWithinPartitions:
+        - - "currentDateTime"
+          - "Desc"
+        functions:
+        - - "Row Number"
+          - "rn"
+    Deduplicate:
+      type: "filter"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "Deduplicate"
+        filterConditions:
+        - - "rn"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+    dim_worldclockapi_type1:
+      type: "table-update"
+      sources:
+      - "Deduplicate"
+      parameters:
+        componentName: "dim_worldclockapi_type1"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type1"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"timeZoneName\" = \"input\".\"timeZoneName\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+design:
+  components:
+    stg_worldclockapi_utc:
+      position:
+        x: 416
+        "y": 240
+      tempMetlId: 1598
+    Rank 0:
+      position:
+        x: 640
+        "y": 240
+      tempMetlId: 1599
+    Deduplicate:
+      position:
+        x: 768
+        "y": 240
+      tempMetlId: 1600
+    dim_worldclockapi_type1:
+      position:
+        x: 1008
+        "y": 240
+      tempMetlId: 1601
+  notes:
+    "1597":
+      position:
+        x: 384
+        "y": 65
+      size:
+        height: 62
+        width: 376
+      theme: "green"
+      content: |-
+        This is a "type 1" dimension update.
+        If there is no value, it creates a new row.
+        If there is an existing value it just overwrites the old data.
+    "1596":
+      position:
+        x: 565
+        "y": 177
+      size:
+        height: 112
+        width: 283
+      theme: "green"
+      content: "It is important to make sure the intended primary key is unique, otherwise\
+        \ it can break the following update"

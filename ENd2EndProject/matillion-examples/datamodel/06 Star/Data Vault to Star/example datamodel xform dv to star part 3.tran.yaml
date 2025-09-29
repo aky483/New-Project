@@ -1,0 +1,514 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    h_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "h_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "h_equipment"
+        columnNames:
+        - "hashkey"
+        - "equipment_id"
+        timeOffset: ""
+    s_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "s_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "s_equipment"
+        columnNames:
+        - "hashkey"
+        - "latest_from_source"
+        - "context"
+        timeOffset: ""
+    s_bubble_event:
+      type: "table-input"
+      parameters:
+        componentName: "s_bubble_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "s_bubble_event"
+        columnNames:
+        - "hashkey"
+        - "load_timestamp"
+        - "record_source"
+        - "latest_from_source"
+        - "hashdiff"
+        - "context"
+        timeOffset: ""
+    l_bubble_event_equipment_link:
+      type: "table-input"
+      parameters:
+        componentName: "l_bubble_event_equipment_link"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "l_bubble_event_equipment_link"
+        columnNames:
+        - "bubble_event_hashkey"
+        - "equipment_hashkey"
+        timeOffset: ""
+    h_bubble_event:
+      type: "table-input"
+      parameters:
+        componentName: "h_bubble_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "h_bubble_event"
+        columnNames:
+        - "hashkey"
+        - "equipment_alias"
+        - "ts"
+        - "load_timestamp"
+        - "record_source"
+        timeOffset: ""
+    Join 1:
+      type: "join"
+      sources:
+      - "h_bubble_event"
+      - "s_bubble_event"
+      parameters:
+        componentName: "Join 1"
+        mainTable: "h_bubble_event"
+        mainTableAlias: "h"
+        joins:
+        - - "s_bubble_event"
+          - "s"
+          - "Inner"
+        joinExpressions:
+        - - "\"h\".\"hashkey\" = \"s\".\"hashkey\" AND \"s\".\"latest_from_source\"\
+            \ = TRUE"
+          - "h_Inner_s"
+        columnMappings:
+        - - "h.hashkey"
+          - "h_hashkey"
+        - - "s.context"
+          - "context"
+    Extract Nested Data 0:
+      type: "extract-nested-data-sf"
+      sources:
+      - "Join 1"
+      parameters:
+        componentName: "Extract Nested Data 0"
+        includeInputColumns: "Yes"
+        columns:
+        - name: "temperature"
+          datatype: "VARIANT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "temperature"
+          isArray: "false"
+          include: "false"
+        - name: "equipment_alias"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "equipment_alias"
+          isArray: "false"
+          include: "false"
+        - name: "equipment_id"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "equipment_id"
+          isArray: "false"
+          include: "false"
+        - name: "ts"
+          datatype: "VARIANT"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "ts"
+          isArray: "false"
+          include: "true"
+        outerJoin: "False"
+        inputAlias: "i"
+        arrayPrefix: "f"
+    Calculator 1:
+      type: "calculator"
+      sources:
+      - "Extract Nested Data 0"
+      parameters:
+        componentName: "Calculator 1"
+        includeInputColumns: "No"
+        calculations:
+        - - "TO_TIMESTAMP_NTZ(\"ts\")"
+          - "bubble_ts"
+        - - "\"h_hashkey\""
+          - "bubble_hashkey"
+    Join 2:
+      type: "join"
+      sources:
+      - "Calculator 1"
+      - "l_bubble_event_equipment_link"
+      parameters:
+        componentName: "Join 2"
+        mainTable: "Calculator 1"
+        mainTableAlias: "be"
+        joins:
+        - - "l_bubble_event_equipment_link"
+          - "l"
+          - "Inner"
+        joinExpressions:
+        - - "\"l\".\"bubble_event_hashkey\" = \"be\".\"bubble_hashkey\""
+          - "be_Inner_l"
+        columnMappings:
+        - - "be.bubble_ts"
+          - "bubble_ts"
+        - - "be.bubble_hashkey"
+          - "bubble_hashkey"
+        - - "l.bubble_event_hashkey"
+          - "bubble_event_hashkey"
+        - - "l.equipment_hashkey"
+          - "equipment_hashkey"
+    Join 3:
+      type: "join"
+      sources:
+      - "Join 2"
+      - "h_equipment"
+      parameters:
+        componentName: "Join 3"
+        mainTable: "Join 2"
+        mainTableAlias: "be"
+        joins:
+        - - "h_equipment"
+          - "q"
+          - "Inner"
+        joinExpressions:
+        - - "\"be\".\"equipment_hashkey\" = \"q\".\"hashkey\""
+          - "be_Inner_q"
+        columnMappings:
+        - - "be.bubble_ts"
+          - "bubble_ts"
+        - - "be.bubble_hashkey"
+          - "bubble_hashkey"
+        - - "be.bubble_event_hashkey"
+          - "bubble_event_hashkey"
+        - - "be.equipment_hashkey"
+          - "equipment_hashkey"
+        - - "q.hashkey"
+          - "hashkey"
+        - - "q.equipment_id"
+          - "equipment_id"
+    Join 4:
+      type: "join"
+      sources:
+      - "Join 3"
+      - "s_equipment"
+      parameters:
+        componentName: "Join 4"
+        mainTable: "Join 3"
+        mainTableAlias: "be"
+        joins:
+        - - "s_equipment"
+          - "s"
+          - "Inner"
+        joinExpressions:
+        - - "\"s\".\"hashkey\" = \"be\".\"hashkey\" AND \"s\".\"latest_from_source\"\
+            \ = TRUE"
+          - "be_Inner_s"
+        columnMappings:
+        - - "be.bubble_ts"
+          - "bubble_ts"
+        - - "be.bubble_hashkey"
+          - "bubble_hashkey"
+        - - "be.bubble_event_hashkey"
+          - "bubble_event_hashkey"
+        - - "be.equipment_hashkey"
+          - "equipment_hashkey"
+        - - "be.hashkey"
+          - "be_hashkey"
+        - - "be.equipment_id"
+          - "equipment_id"
+        - - "s.hashkey"
+          - "s_hashkey"
+        - - "s.latest_from_source"
+          - "latest_from_source"
+        - - "s.context"
+          - "context"
+    Extract Nested Data 1:
+      type: "extract-nested-data-sf"
+      sources:
+      - "Join 4"
+      parameters:
+        componentName: "Extract Nested Data 1"
+        includeInputColumns: "Yes"
+        columns:
+        - name: "name"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "name"
+          isArray: "false"
+          include: "true"
+        - name: "equipment_id"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "equipment_id"
+          isArray: "false"
+          include: "false"
+        - name: "fan_status"
+          datatype: "VARCHAR"
+          size: "0"
+          decimalPlaces: "0"
+          columnName: "context"
+          aliasName: "fan_status"
+          isArray: "false"
+          include: "true"
+        outerJoin: "False"
+        inputAlias: "i"
+        arrayPrefix: "f"
+    dim_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "dim_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_fan_status"
+        columnNames:
+        - "fan_status_key"
+        - "fan_status_code"
+        - "status"
+        timeOffset: ""
+    dim_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "dim_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_equipment"
+        columnNames:
+        - "equipment_key"
+        - "equipment_id"
+        - "name"
+        timeOffset: ""
+    Equip Join:
+      type: "join"
+      sources:
+      - "dim_equipment"
+      - "Extract Nested Data 1"
+      parameters:
+        componentName: "Equip Join"
+        mainTable: "Extract Nested Data 1"
+        mainTableAlias: "f"
+        joins:
+        - - "dim_equipment"
+          - "e"
+          - "Inner"
+        joinExpressions:
+        - - "\"f\".\"equipment_id\" = \"e\".\"equipment_id\""
+          - "f_Inner_e"
+        columnMappings:
+        - - "f.bubble_hashkey"
+          - "id"
+        - - "f.bubble_ts"
+          - "ts"
+        - - "f.fan_status"
+          - "fan_status_code"
+        - - "e.equipment_key"
+          - "equipment_key"
+    Fan Status Join:
+      type: "join"
+      sources:
+      - "Equip Join"
+      - "dim_fan_status"
+      parameters:
+        componentName: "Fan Status Join"
+        mainTable: "Equip Join"
+        mainTableAlias: "f"
+        joins:
+        - - "dim_fan_status"
+          - "x"
+          - "Inner"
+        joinExpressions:
+        - - "\"f\".\"fan_status_code\" = \"x\".\"status\""
+          - "f_Inner_x"
+        columnMappings:
+        - - "f.id"
+          - "id"
+        - - "f.ts"
+          - "ts"
+        - - "f.equipment_key"
+          - "equipment_key"
+        - - "x.fan_status_key"
+          - "fan_status_key"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Fan Status Join"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "CAST(TO_CHAR(\"ts\", 'YYYYMMDD') AS INTEGER)"
+          - "date_key"
+        - - "CAST(TO_CHAR(\"ts\", 'HH24') AS INTEGER)"
+          - "hour_key"
+    fact_bubble_event:
+      type: "table-update"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "fact_bubble_event"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "fact_bubble_event"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"id\" = \"input\".\"id\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "ts"
+          - "ts"
+        - - "equipment_key"
+          - "equipment_key"
+        - - "fan_status_key"
+          - "fan_status_key"
+        - - "date_key"
+          - "date_key"
+        - - "hour_key"
+          - "hour_key"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "id"
+          - "id"
+        - - "ts"
+          - "ts"
+        - - "equipment_key"
+          - "equipment_key"
+        - - "fan_status_key"
+          - "fan_status_key"
+        - - "date_key"
+          - "date_key"
+        - - "hour_key"
+          - "hour_key"
+design:
+  components:
+    h_equipment:
+      position:
+        x: 1010
+        "y": 383
+      tempMetlId: 1385
+    s_equipment:
+      position:
+        x: 1120
+        "y": 192
+      tempMetlId: 1386
+    s_bubble_event:
+      position:
+        x: 578
+        "y": 383
+      tempMetlId: 1387
+    l_bubble_event_equipment_link:
+      position:
+        x: 914
+        "y": 191
+      tempMetlId: 1388
+    h_bubble_event:
+      position:
+        x: 466
+        "y": 287
+      tempMetlId: 1389
+    Join 1:
+      position:
+        x: 578
+        "y": 287
+      tempMetlId: 1390
+    Extract Nested Data 0:
+      position:
+        x: 690
+        "y": 287
+      tempMetlId: 1391
+    Calculator 1:
+      position:
+        x: 802
+        "y": 287
+      tempMetlId: 1392
+    Join 2:
+      position:
+        x: 914
+        "y": 287
+      tempMetlId: 1393
+    Join 3:
+      position:
+        x: 1010
+        "y": 287
+      tempMetlId: 1394
+    Join 4:
+      position:
+        x: 1113
+        "y": 281
+      tempMetlId: 1395
+    Extract Nested Data 1:
+      position:
+        x: 1232
+        "y": 288
+      tempMetlId: 1396
+    dim_fan_status:
+      position:
+        x: 1520
+        "y": 176
+      tempMetlId: 1397
+    dim_equipment:
+      position:
+        x: 1392
+        "y": 176
+      tempMetlId: 1398
+    Equip Join:
+      position:
+        x: 1392
+        "y": 288
+      tempMetlId: 1399
+    Fan Status Join:
+      position:
+        x: 1520
+        "y": 288
+      tempMetlId: 1400
+    Calculator 0:
+      position:
+        x: 1664
+        "y": 288
+      tempMetlId: 1408
+    fact_bubble_event:
+      position:
+        x: 1808
+        "y": 288
+      tempMetlId: 1409
+  notes:
+    "1384":
+      position:
+        x: 437
+        "y": 453
+      size:
+        height: 111
+        width: 686
+      theme: "green"
+      content: |-
+        No less than seven input tables are needed this time, in contrast to the five when starting from a 3NF data model.
+
+        There is no limit to the number of Satellite tables you can implement for one Hub. This aspect of Data Vault is close to the concepts behind sixth normal form and RDF triplestore. It has the effect of somewhat postponing the data integration.
+
+        In this implementation the satellite tables contain semi-structured columns. so it’s only at this late stage that you can start to unravel the last of the semantics with Extract Nested Data components. This is what postponing the data integration looks like in practice.
+    "1383":
+      position:
+        x: 1332
+        "y": 115
+      size:
+        height: 221
+        width: 376
+      theme: "green"
+      content: "Dimension joins and derivations"

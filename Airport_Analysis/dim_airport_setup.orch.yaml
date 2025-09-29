@@ -1,0 +1,378 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create Airports Staging Table"
+        - "Create US State Table"
+        - "Create Dimension Table"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create Airports Staging Table:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Load Avro Data to Variant Type"
+      skipped: false
+      parameters:
+        componentName: "Create Airports Staging Table"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: "matillion_stg_airports"
+        columns:
+        - - "airport_data"
+          - "VARIANT"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+        snowflakeTableType: "Permanent"
+    Create US State Table:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Load State Names"
+      skipped: false
+      parameters:
+        componentName: "Create US State Table"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: "matillion_us_state_lookup"
+        columns:
+        - - "name"
+          - "VARCHAR"
+          - "25"
+          - ""
+          -
+          - "No"
+          - "No"
+          - "No"
+        - - "code"
+          - "VARCHAR"
+          - "2"
+          - ""
+          -
+          - "No"
+          - "No"
+          - "No"
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+        snowflakeTableType: "Permanent"
+    Create Dimension Table:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Create Dimension Table"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: "matillion_dim_airports"
+        columns:
+        - - "iata"
+          - "VARCHAR"
+          - "255"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "airport"
+          - "VARCHAR"
+          - "255"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "city"
+          - "VARCHAR"
+          - "255"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "state"
+          - "VARCHAR"
+          - "255"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "country"
+          - "VARCHAR"
+          - "255"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "lat"
+          - "NUMBER"
+          - "12"
+          - "8"
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "long"
+          - "NUMBER"
+          - "12"
+          - "8"
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "state_name"
+          - "VARCHAR"
+          - "25"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        - - "last_updated"
+          - "TIMESTAMP"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - "No"
+          - ""
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+        snowflakeTableType: "Permanent"
+    Load Avro Data to Variant Type:
+      type: "s3-load"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Load Avro Data to Variant Type"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://matillion-public/sample_jobs/airports.avro"
+        pattern: ".*"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "matillion_stg_airports"
+        loadColumns:
+        - "airport_data"
+        format: "[Custom]"
+        fileType: "AVRO"
+        compression: "NONE"
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "True"
+    Load State Names:
+      type: "s3-load"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Load State Names"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://matillion-public/sample_jobs/us_states.tsv"
+        pattern: ".*"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "matillion_us_state_lookup"
+        loadColumns:
+        - "name"
+        - "code"
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: "\\t"
+        skipHeader: ""
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: "\""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        onError: "Skip File When n Errors"
+        "n": "5"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "True"
+    And 0:
+      type: "and"
+      transitions:
+        unconditional:
+        - "dim_airports"
+      skipped: false
+      parameters:
+        componentName: "And 0"
+    dim_airports:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "dim_airports"
+        transformationJob: "dim_airports"
+design:
+  components:
+    Start 0:
+      position:
+        x: -378
+        "y": -188
+      tempMetlId: 948
+    Create Airports Staging Table:
+      position:
+        x: -180
+        "y": -200
+      tempMetlId: 949
+    Create US State Table:
+      position:
+        x: -170
+        "y": -90
+      tempMetlId: 950
+    Create Dimension Table:
+      position:
+        x: -170
+        "y": -10
+      tempMetlId: 951
+    Load Avro Data to Variant Type:
+      position:
+        x: 80
+        "y": -190
+      tempMetlId: 952
+    Load State Names:
+      position:
+        x: 80
+        "y": -90
+      tempMetlId: 953
+    And 0:
+      position:
+        x: 340
+        "y": 0
+      tempMetlId: 954
+    dim_airports:
+      position:
+        x: 467
+        "y": 3
+      tempMetlId: 955
+  notes:
+    "941":
+      position:
+        x: -736
+        "y": -252
+      size:
+        height: 158
+        width: 271
+      theme: "white"
+      content: |
+        ==================================
+          README
+        ==================================
+        Running this job will create tables in your snowflake database!
+        * matillion_stg_airports
+        * matillion_us_state_lookup
+        * matillion_dim_airports
+
+        Internet access on the AMI instance is required to load from S3.
+    "942":
+      position:
+        x: -291
+        "y": -248
+      size:
+        height: 299
+        width: 259
+      theme: "white"
+      content: "Create the tables"
+    "943":
+      position:
+        x: -7
+        "y": -246
+      size:
+        height: 293
+        width: 200
+      theme: "white"
+      content: "Load the data from S3"
+    "944":
+      position:
+        x: 220
+        "y": -242
+      size:
+        height: 89
+        width: 267
+      theme: "white"
+      content: "The S3 Loads here require S3 API Access. \n\nEnsure your environment\
+        \ has working credentials with S3 access.\n\nSee: Project-->Manage Credentials"
+    "945":
+      position:
+        x: 252
+        "y": -38
+      size:
+        height: 106
+        width: 291
+      theme: "white"
+      content: |2-
+
+
+
+
+
+
+        When all tables are loaded, run the transformation
+    "946":
+      position:
+        x: -687
+        "y": -36
+      size:
+        height: 58
+        width: 250
+      theme: "white"
+      content: "Ask a colleague to join the action by sending them the URL above"
+    "947":
+      position:
+        x: -645
+        "y": 95
+      size:
+        height: 50
+        width: 618
+      theme: "white"
+      content: "Make some changes! \nDon't worry about breaking anything, because\
+        \ all actions can be undone via a right-click. \nThe undo history is stored\
+        \ on the server, so even if you leave and come back later you can still undo."

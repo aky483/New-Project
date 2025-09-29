@@ -1,0 +1,179 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "Unpacked from Shared Job [Create Table From S3 File Header]."
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Read CSV header row in S3 File"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Read CSV header row in S3 File:
+      type: "python-script"
+      transitions:
+        success:
+        - "Create Table Dynamically"
+      skipped: false
+      parameters:
+        componentName: "Read CSV header row in S3 File"
+        script: "###\n# Variables are directly accessible: \n#   print (myvar)\n#\
+          \ Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\n\n\
+          import boto3\nimport pandas as pd\nimport datetime\nimport re\n\n# GET TIMESTAMP\
+          \ OF SCRIPT RUN FOR METADATA HISTORY\ntimestamp = datetime.datetime.now().strftime(\"\
+          %Y-%m-%d %H:%M:%S\")\nprint(timestamp)\n\n# USES NATIVE CREDENTIALS OF METL\
+          \ INSTANCE\ns3 = boto3.client('s3')\n\nBUCKET_NAME = s3_bucket_name\n\n\
+          grid_data = []\n\ns3filename = s3_filename\n#print(s3filename)\n\nstg_clean_table_name\
+          \ = \"stg_\" + re.sub('\\W','_',s3filename).lower()\ncontext.updateVariable('s3_stg_clean_table_name',\
+          \ stg_clean_table_name)\n#print(stg_clean_table_name)\n\n# READ S3 FILE\
+          \ HEADER\ns3file = s3.get_object(Bucket=BUCKET_NAME, Key=s3filename) \n\
+          df_cols = pd.read_csv(s3file.get(\"Body\"), nrows=0).columns.tolist()\n\
+          #print(df_cols)\n\n# LOOP THROUGH THE COLUMNS\ncol_no = 1\nfor col in df_cols:\n\
+          \  grid_row = []\n  grid_row.append(s3filename)\n  grid_row.append(str(col_no))\n\
+          \  grid_row.append(col)\n  grid_row.append(timestamp)\n  grid_row.append(stg_clean_table_name)\n\
+          \  grid_row.append(\"VARCHAR\")\n  grid_row.append(\"100000\")\n  grid_row.append(\"\
+          No\")\n  grid_row.append(\"No\")\n  grid_row.append(\"\")\n  grid_row.append(\"\
+          \")\n  grid_row.append(\"\")\n  col_no += 1\n  grid_data.append(grid_row)\n\
+          \n# WRITE COLUMN DEFINITIONS TO GRID\ncontext.updateGridVariable('s3_csvfile_metadata',grid_data)\n\
+          print(context.getGridVariable('s3_csvfile_metadata'))\n\n"
+        interpreter: "Python 3"
+        timeout: "360"
+    Create Table Dynamically:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "Create Table Dynamically"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: "${s3_stg_clean_table_name}"
+        snowflakeTableType: "Permanent"
+        columns:
+          fromGrid:
+            variable: "s3_csvfile_metadata"
+            columns:
+            - "column_name"
+            - "column_type"
+            - "column_size"
+            - "column_precision"
+            - "column_default_value"
+            - "column_not_null"
+            - "column_unique"
+            - "column_comment"
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+  variables:
+    s3_filename:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "USOIL_D1.csv"
+    s3_bucket_name:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "mtln-richardl"
+    s3_stg_clean_table_name:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "stg_csv_tbl"
+    s3_csvfile_metadata:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+        columns:
+          filename:
+            columnType: "TEXT"
+          column_pos:
+            columnType: "NUMBER"
+          column_name:
+            columnType: "TEXT"
+          scan_date:
+            columnType: "TEXT"
+          clean_table_name:
+            columnType: "TEXT"
+          column_type:
+            columnType: "TEXT"
+          column_size:
+            columnType: "TEXT"
+          column_not_null:
+            columnType: "TEXT"
+          column_unique:
+            columnType: "TEXT"
+          column_precision:
+            columnType: "TEXT"
+          column_default_value:
+            columnType: "TEXT"
+          column_comment:
+            columnType: "TEXT"
+      defaultValue:
+      - - "testfile"
+        - "0"
+        - "col_default"
+        - "2021-11-20 00:00:00"
+        - ""
+        - "VARCHAR"
+        - "100"
+        - "No"
+        - "No"
+        - ""
+        - ""
+        - ""
+design:
+  components:
+    Start 0:
+      position:
+        x: -832
+        "y": 0
+      tempMetlId: 4414
+    Read CSV header row in S3 File:
+      position:
+        x: -672
+        "y": 0
+      tempMetlId: 4415
+    Create Table Dynamically:
+      position:
+        x: -512
+        "y": 0
+      tempMetlId: 4416
+  notes:
+    "4413":
+      position:
+        x: -1066
+        "y": -336
+      size:
+        height: 292
+        width: 763
+      theme: "green"
+      content: "**PREREQUISITES**\nThe Pandas python module must be installed.\nTo\
+        \ do this you can use the Bash Script component and run the following command\n\
+        pip-3.6 install --user pandas\n\n**DESCRIPTION**\nTakes an S3 bucket name\
+        \ and file path as input parameters.\nReads the header row of the file to\
+        \ determine table column names and creates a table with these column names.\n\
+        \nIdeal for automation of creating staging tables from s3 files when combined\
+        \ with other components e.g. an iterator.  \n\n**Scalar Input Variables**:\n\
+        __s3_bucket_name*  Name of S3 Bucket where source file is located\n*s3_filename*\
+        \  Filename of source file in S3, includes folder path if not at root\n\n\
+        **Scalar Output Variables**:\n*s3_stg_table_name*  Name of the staging table\
+        \ created by the job\n\n**Grid Output Variables**:\n*s3_csvfile_metadata__\
+        \  Metadata taken from header row that was used by job to create the table"

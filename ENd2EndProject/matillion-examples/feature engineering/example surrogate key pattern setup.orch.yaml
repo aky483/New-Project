@@ -1,0 +1,144 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "Setup for the Surrogate Key example"
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create dim_surrogate_key_example:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Initial sample data"
+      skipped: false
+      parameters:
+        componentName: "Create dim_surrogate_key_example"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "dim_surrogate_key_example"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "sk"
+          - "NUMBER"
+          - "8"
+          - "0"
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "bus_key_part1"
+          - "VARCHAR"
+          - "20"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "bus_key_part2"
+          - "VARCHAR"
+          - "20"
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        - - "some_attribute"
+          - "VARCHAR"
+          - "40"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Initial sample data:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Initial sample data"
+        sqlScript: |
+          INSERT INTO "${environment_database}"."${examples_schema}"."dim_surrogate_key_example"
+          VALUES
+              (40,  'AAA', 'x',   'somevalue'),
+              (2,   'AAA', 'y',   'somevalue'),
+              (168, 'B',   'b',   'somevalue'),
+              (13,  'CC',  'abc', 'somevalue')
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Create dim_surrogate_key_example"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that examples_schema exists and has a valid default value\n\
+          \nif [ -z \"${examples_schema}\" ]\nthen\n\techo \"You must set a default\
+          \ value for examples_schema under Project / Manage Environment Variables\"\
+          \n    exit 99\nelse\n\techo \"examples_schema = '${examples_schema}'\"\n\
+          fi\n"
+        timeout: "360"
+design:
+  components:
+    Start 0:
+      position:
+        x: -128
+        "y": 0
+      tempMetlId: 1134
+    Create dim_surrogate_key_example:
+      position:
+        x: 176
+        "y": 0
+      tempMetlId: 1135
+    Initial sample data:
+      position:
+        x: 352
+        "y": 0
+      tempMetlId: 1136
+    Check variables:
+      position:
+        x: 32
+        "y": 0
+      tempMetlId: 1137
+  notes:
+    "1133":
+      position:
+        x: -557
+        "y": -228
+      size:
+        height: 143
+        width: 706
+      theme: "green"
+      content: |
+        Start here!
+        * Run this job once to set up the initial data
+        * Afterwards open the **example surrogate key pattern transform** job and run it
+        * First time through, there are new surrogate keys to insert
+        * Second time, there are no new records
+
+        These are the example jobs from the Developer Relations articles on Star Schema design and development:
+         * Creating Dimension tables in [https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion](https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion)
+         * Tip 3 in [https://www.matillion.com/resources/developer-relations/top-10-tips-for-creating-dimension-tables-using-matillion](https://www.matillion.com/resources/developer-relations/top-10-tips-for-creating-dimension-tables-using-matillion)
+    "1132":
+      position:
+        x: -557
+        "y": -36
+      size:
+        height: 70
+        width: 347
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variable:
+
+        **examples_schema** (name of a Snowflake schema)

@@ -1,0 +1,288 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    tmp_worldclockapi_utc_delta:
+      type: "table-input"
+      parameters:
+        componentName: "tmp_worldclockapi_utc_delta"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "tmp_worldclockapi_utc_delta"
+        columnNames:
+        - "timeZoneName"
+        - "master_currentDateTime"
+        - "compare_currentDateTime"
+        - "master_currentFileTime"
+        - "compare_currentFileTime"
+        - "master_dayOfTheWeek"
+        - "compare_dayOfTheWeek"
+        - "prior_version"
+        - "Indicator"
+        - "load_timestamp"
+        timeOffset: ""
+    Identical:
+      type: "filter"
+      sources:
+      - "tmp_worldclockapi_utc_delta"
+      parameters:
+        componentName: "Identical"
+        filterConditions:
+        - - "Indicator"
+          - "Is"
+          - "Equal to"
+          - "I"
+        combineCondition: "AND"
+    New or Changed:
+      type: "filter"
+      sources:
+      - "tmp_worldclockapi_utc_delta"
+      parameters:
+        componentName: "New or Changed"
+        filterConditions:
+        - - "Indicator"
+          - "Is"
+          - "Equal to"
+          - "N"
+        - - "Indicator"
+          - "Is"
+          - "Equal to"
+          - "C"
+        combineCondition: "OR"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "New or Changed"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "compare_currentDateTime"
+          - "currentDateTime"
+        - - "compare_currentFileTime"
+          - "currentFileTime"
+        - - "compare_dayOfTheWeek"
+          - "dayOfTheWeek"
+        - - "load_timestamp"
+          - "ValidFrom"
+        - - "prior_version"
+          - "prior_version"
+    New fields:
+      type: "calculator"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "New fields"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "TO_TIMESTAMP_NTZ('${jv_infinity_date}')"
+          - "ValidTo"
+        - - |-
+            CASE WHEN "prior_version" IS NULL THEN 1
+                 ELSE "prior_version" + 1
+            END
+          - "Version"
+        - - "TRUE"
+          - "CurrentFlag"
+    dim_worldclockapi_type2:
+      type: "table-output"
+      sources:
+      - "New fields"
+      parameters:
+        componentName: "dim_worldclockapi_type2"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type2"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        - - "ValidFrom"
+          - "ValidFrom"
+        - - "ValidTo"
+          - "ValidTo"
+        - - "Version"
+          - "Version"
+        - - "CurrentFlag"
+          - "CurrentFlag"
+        outputMode: "Append"
+    Changed:
+      type: "filter"
+      sources:
+      - "tmp_worldclockapi_utc_delta"
+      parameters:
+        componentName: "Changed"
+        filterConditions:
+        - - "Indicator"
+          - "Is"
+          - "Equal to"
+          - "C"
+        combineCondition: "OR"
+    Updated fields:
+      type: "calculator"
+      sources:
+      - "Rename 1"
+      parameters:
+        componentName: "Updated fields"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "FALSE"
+          - "CurrentFlag"
+        - - "DATEADD(SECOND, -1, \"load_timestamp\")"
+          - "ValidTo"
+    Rename 1:
+      type: "rename"
+      sources:
+      - "Changed"
+      parameters:
+        componentName: "Rename 1"
+        columnMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "load_timestamp"
+          - "load_timestamp"
+        - - "prior_version"
+          - "Version"
+    dim_worldclockapi_type2 0:
+      type: "table-update"
+      sources:
+      - "Updated fields"
+      parameters:
+        componentName: "dim_worldclockapi_type2 0"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type2"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - |-
+            "target"."timeZoneName" = "input"."timeZoneName"
+            AND "target"."Version" = "input"."Version"
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "ValidTo"
+          - "ValidTo"
+        - - "CurrentFlag"
+          - "CurrentFlag"
+        includeNotMatched: "No"
+  variables:
+    jv_infinity_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "5555-11-22"
+design:
+  components:
+    tmp_worldclockapi_utc_delta:
+      position:
+        x: 327
+        "y": 196
+      tempMetlId: 1632
+    Identical:
+      position:
+        x: 512
+        "y": 64
+      tempMetlId: 1633
+    New or Changed:
+      position:
+        x: 512
+        "y": 192
+      tempMetlId: 1634
+    Rename 0:
+      position:
+        x: 672
+        "y": 192
+      tempMetlId: 1635
+    New fields:
+      position:
+        x: 832
+        "y": 192
+      tempMetlId: 1636
+    dim_worldclockapi_type2:
+      position:
+        x: 992
+        "y": 192
+      tempMetlId: 1637
+    Changed:
+      position:
+        x: 512
+        "y": 304
+      tempMetlId: 1638
+    Updated fields:
+      position:
+        x: 832
+        "y": 304
+      tempMetlId: 1639
+    Rename 1:
+      position:
+        x: 672
+        "y": 304
+      tempMetlId: 1640
+    dim_worldclockapi_type2 0:
+      position:
+        x: 992
+        "y": 304
+      tempMetlId: 1641
+  notes:
+    "1631":
+      position:
+        x: 396
+        "y": 390
+      size:
+        height: 40
+        width: 506
+      theme: "yellow"
+      content: "In this example, the \"infinity\" date 5555-11-22 is held as a Job\
+        \ Variable **jv_infinity_date**"
+    "1630":
+      position:
+        x: 1074
+        "y": 174
+      size:
+        height: 40
+        width: 158
+      theme: "green"
+      content: "Inserts and Updates both need to generate one new Current record"
+    "1629":
+      position:
+        x: 582
+        "y": 48
+      size:
+        height: 40
+        width: 149
+      theme: "green"
+      content: "Nothing to do"
+    "1628":
+      position:
+        x: 1074
+        "y": 281
+      size:
+        height: 40
+        width: 160
+      theme: "green"
+      content: "Updates need to close off the previous Current record"
+    "1627":
+      position:
+        x: 154
+        "y": 45
+      size:
+        height: 229
+        width: 245
+      theme: "yellow"
+      content: |-
+        This is a continuation of the SCD type 2 update. It is important that you did **not** update the dimension table in the same transformation as the Detect Changes.
+        In this job we are starting with the intermediate results that were saved in part 1.

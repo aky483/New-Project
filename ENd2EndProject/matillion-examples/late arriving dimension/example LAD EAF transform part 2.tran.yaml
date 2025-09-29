@@ -1,0 +1,181 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    dim_airports:
+      type: "table-input"
+      parameters:
+        componentName: "dim_airports"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_airport_sample"
+        columnNames:
+        - "iata"
+        - "airport"
+        - "city"
+        - "state"
+        - "country"
+        - "lat"
+        - "long"
+        - "state_name"
+        - "last_updated"
+        timeOffset: ""
+    Left Join:
+      type: "join"
+      sources:
+      - "stg_iata_code"
+      - "dim_airports"
+      parameters:
+        componentName: "Left Join"
+        mainTable: "stg_iata_code"
+        mainTableAlias: "s"
+        joins:
+        - - "dim_airports"
+          - "d"
+          - "Left"
+        joinExpressions:
+        - - "\"s\".\"iata_code\" = \"d\".\"iata\""
+          - "s_Left_d"
+        columnMappings:
+        - - "s.iata_code"
+          - "iata_code"
+        - - "d.iata"
+          - "existing_iata_code"
+    Late Arriving Dimensions:
+      type: "filter"
+      sources:
+      - "Left Join"
+      parameters:
+        componentName: "Late Arriving Dimensions"
+        filterConditions:
+        - - "existing_iata_code"
+          - "Is"
+          - "Null or blank"
+          - ""
+        combineCondition: "AND"
+    Calculator for defaults:
+      type: "calculator"
+      sources:
+      - "Late Arriving Dimensions"
+      parameters:
+        componentName: "Calculator for defaults"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "'Unknown'"
+          - "city"
+        - - "'Unknown'"
+          - "airport"
+    stg_iata_code:
+      type: "table-input"
+      parameters:
+        componentName: "stg_iata_code"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_iata_code"
+        columnNames:
+        - "iata_code"
+        timeOffset: ""
+    dim_airport_sample:
+      type: "table-output"
+      sources:
+      - "Calculator for defaults"
+      parameters:
+        componentName: "dim_airport_sample"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_airport_sample"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "iata_code"
+          - "iata"
+        - - "city"
+          - "city"
+        - - "airport"
+          - "airport"
+        outputMode: "Append"
+design:
+  components:
+    dim_airports:
+      position:
+        x: 470
+        "y": 318
+      tempMetlId: 1051
+    Left Join:
+      position:
+        x: 598
+        "y": 249
+      tempMetlId: 1052
+    Late Arriving Dimensions:
+      position:
+        x: 749
+        "y": 252
+      tempMetlId: 1053
+    Calculator for defaults:
+      position:
+        x: 928
+        "y": 256
+      tempMetlId: 1054
+    stg_iata_code:
+      position:
+        x: 470
+        "y": 191
+      tempMetlId: 1055
+    dim_airport_sample:
+      position:
+        x: 1104
+        "y": 256
+      tempMetlId: 1056
+  notes:
+    "1019":
+      position:
+        x: 300
+        "y": 134
+      size:
+        height: 102
+        width: 208
+      theme: "green"
+      content: "The potential late arriving dimensions from the previous step"
+    "1023":
+      position:
+        x: 300
+        "y": 271
+      size:
+        height: 102
+        width: 208
+      theme: "green"
+      content: "The existing dimensions"
+    "1022":
+      position:
+        x: 562
+        "y": 390
+      size:
+        height: 107
+        width: 684
+      theme: "green"
+      content: |-
+        This job is an example of data having "state".
+
+        - When you run it for the **first** time, one record for IATA code CBM will be added.
+        - When you run it a **subsequent** time, there is nothing more to add
+
+        More details at [https://www.matillion.com/resources/developer-relations/data-has-state-data-functions-and-design-patterns](https://www.matillion.com/resources/developer-relations/data-has-state-data-functions-and-design-patterns)
+    "1021":
+      position:
+        x: 1038
+        "y": 175
+      size:
+        height: 132
+        width: 207
+      theme: "green"
+      content: "Be certain to run this in **Append** mode to add all the late arriving\
+        \ dimension records to the dimension table."
+    "1020":
+      position:
+        x: 667
+        "y": 207
+      size:
+        height: 95
+        width: 152
+      theme: "white"
+      content: "Filter"

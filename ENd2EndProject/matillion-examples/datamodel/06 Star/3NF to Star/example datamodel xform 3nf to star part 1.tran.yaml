@@ -1,0 +1,64 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    norm_equipment:
+      type: "table-input"
+      parameters:
+        componentName: "norm_equipment"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_equipment"
+        columnNames:
+        - "equipment_id"
+        - "name"
+        timeOffset: ""
+    dim_equipment:
+      type: "table-update"
+      sources:
+      - "norm_equipment"
+      parameters:
+        componentName: "dim_equipment"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_equipment"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"equipment_id\" = \"input\".\"equipment_id\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "name"
+          - "name"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "equipment_id"
+          - "equipment_id"
+        - - "name"
+          - "name"
+design:
+  components:
+    norm_equipment:
+      position:
+        x: 304
+        "y": 128
+      tempMetlId: 1324
+    dim_equipment:
+      position:
+        x: 496
+        "y": 128
+      tempMetlId: 1325
+  notes:
+    "1323":
+      position:
+        x: 415
+        "y": 187
+      size:
+        height: 40
+        width: 177
+      theme: "green"
+      content: "This is a \"type 1\" update"

@@ -1,0 +1,64 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    norm_fan_status:
+      type: "table-input"
+      parameters:
+        componentName: "norm_fan_status"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_fan_status"
+        columnNames:
+        - "fan_status_code"
+        - "name"
+        timeOffset: ""
+    dim_fan_status:
+      type: "table-update"
+      sources:
+      - "norm_fan_status"
+      parameters:
+        componentName: "dim_fan_status"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_fan_status"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"fan_status_code\" = \"input\".\"fan_status_code\""
+          - "Join"
+        whenMatched:
+        - - "<none>"
+          - "Update"
+        updateMapping:
+        - - "name"
+          - "status"
+        includeNotMatched: "Yes"
+        insertMapping:
+        - - "fan_status_code"
+          - "fan_status_code"
+        - - "name"
+          - "status"
+design:
+  components:
+    norm_fan_status:
+      position:
+        x: 295
+        "y": 202
+      tempMetlId: 1329
+    dim_fan_status:
+      position:
+        x: 448
+        "y": 208
+      tempMetlId: 1330
+  notes:
+    "1328":
+      position:
+        x: 385
+        "y": 260
+      size:
+        height: 40
+        width: 177
+      theme: "green"
+      content: "This is a \"type 1\" update"

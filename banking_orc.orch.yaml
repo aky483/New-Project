@@ -1,0 +1,41 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Update NULL Bank"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Update NULL Bank:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Update NULL Bank"
+        sqlScript: |-
+          UPDATE BANKING.BANKING_SCHEMA.TXNS
+          SET BANK = 'DBS Bank' WHERE BANK IS NULL AND YEAR(DATE) = 2020;
+
+          UPDATE BANKING.BANKING_SCHEMA.TXNS
+          SET BANK = 'PNB Bank' WHERE BANK IS NULL AND YEAR(DATE) = 2018;
+
+          UPDATE BANKING.BANKING_SCHEMA.TXNS
+          SET BANK = 'Dena Bank' WHERE BANK IS NULL AND YEAR(DATE) = 2017;
+
+          UPDATE BANKING.BANKING_SCHEMA.TXNS
+          SET BANK = 'UCO Bank' WHERE BANK IS NULL AND YEAR(DATE) = 2016;
+design:
+  components:
+    Start 0:
+      position:
+        x: -400
+        "y": -16
+      tempMetlId: 8473
+    Update NULL Bank:
+      position:
+        x: -236
+        "y": -16
+      tempMetlId: 8478

@@ -1,0 +1,376 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    stg_pb2002:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Load PB2002"
+      skipped: false
+      parameters:
+        componentName: "stg_pb2002"
+        sqlScript: "CREATE OR REPLACE TABLE \"${examples_schema}\".\"stg_pb2002\"\
+          \ (\n\t\"id\"   VARCHAR(20) NOT NULL,\n\t\"name\" VARCHAR(20) NOT NULL,\n\
+          \t\"type\" VARCHAR(20) NOT NULL,\n\t\"geo\" GEOGRAPHY    NOT NULL\n)"
+    stg_quakes:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Load Earthquakes"
+      skipped: false
+      parameters:
+        componentName: "stg_quakes"
+        sqlScript: "CREATE OR REPLACE TABLE \"${examples_schema}\".\"stg_quakes\"\
+          \ (\n\t\"ID\" VARCHAR(40)  NOT NULL,\n\t\"UTC\" VARCHAR(40) NOT NULL,\n\t\
+          \"depth\" FLOAT     NOT NULL,\n\t\"magnitude\" FLOAT NOT NULL,\n\t\"geo\"\
+          \ GEOGRAPHY   NOT NULL\n)"
+    Load PB2002:
+      type: "s3-load"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Load PB2002"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://${examples_storage}"
+        pattern: "matillion-examples/spatial/PB2002-LineString.csv.gz"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_pb2002"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: "|"
+        skipHeader: ""
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: ""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "True"
+    Load Earthquakes:
+      type: "s3-load"
+      transitions:
+        success:
+        - "And 0"
+      skipped: false
+      parameters:
+        componentName: "Load Earthquakes"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://${examples_storage}"
+        pattern: "matillion-examples/spatial/EMSC-2018-Events.csv.gz"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_quakes"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: "|"
+        skipHeader: "1"
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: ""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "True"
+    And 0:
+      type: "and"
+      transitions:
+        unconditional:
+        - "PB2002 xform"
+      skipped: false
+      parameters:
+        componentName: "And 0"
+    PB2002 xform:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "S3 Unload 0"
+      skipped: false
+      parameters:
+        componentName: "PB2002 xform"
+        transformationJob: "ENd2EndProject/matillion-examples/spatial/example PB2002\
+          \ transformation"
+        setScalarVariables:
+        setGridVariables:
+    S3 Unload 0:
+      type: "s3-unload"
+      skipped: false
+      parameters:
+        componentName: "S3 Unload 0"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://${examples_storage}"
+        filePrefix: "matillion-examples/spatial/agg_qb.csv.gz"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "agg_qb"
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ""
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        fieldOptionallyEnclosed: ""
+        nullIf2:
+        overwrite: "True"
+        singleFile: "True"
+        maxFileSize: ""
+        includeHeaders: "True"
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Earthquakes"
+        - "Plate Boundaries"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        timeout: "360"
+    Plate Boundaries:
+      type: "data-transfer-object"
+      transitions:
+        success:
+        - "stg_pb2002"
+      skipped: false
+      parameters:
+        componentName: "Plate Boundaries"
+        sourceType: "HTTPS"
+        performCertificateValidation: "No"
+        sourceUrl3: "${prvt_boundary_data_url}"
+        sourceUsername1: ""
+        sourcePassword1: ""
+        unpackZipFile: "No"
+        targetType: "S3"
+        gzipData: "No"
+        targetObjectName: "matillion-examples/spatial/PB2002-LineString.csv.gz"
+        targetUrl2: "s3://${examples_storage}"
+        accessControlListOptions: ""
+        encryption: "None"
+    Earthquakes:
+      type: "data-transfer-object"
+      transitions:
+        success:
+        - "stg_quakes"
+      skipped: false
+      parameters:
+        componentName: "Earthquakes"
+        sourceType: "HTTPS"
+        performCertificateValidation: "No"
+        sourceUrl3: "${prvt_quake_data_url}"
+        sourceUsername1: ""
+        sourcePassword1: ""
+        unpackZipFile: "No"
+        targetType: "S3"
+        gzipData: "No"
+        targetObjectName: "matillion-examples/spatial/EMSC-2018-Events.csv.gz"
+        targetUrl2: "s3://${examples_storage}"
+        accessControlListOptions: ""
+        encryption: "None"
+  variables:
+    prvt_quake_data_url:
+      metadata:
+        type: "TEXT"
+        description: "URL of the earthquake points data file"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "https://s3.eu-west-1.amazonaws.com/devrel.matillion.com/solutions/spatial/EMSC-2018-Events.csv.gz"
+    prvt_boundary_data_url:
+      metadata:
+        type: "TEXT"
+        description: "URL of the boundary data file"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "https://s3.eu-west-1.amazonaws.com/devrel.matillion.com/solutions/spatial/PB2002-LineString.csv.gz"
+design:
+  components:
+    Start 0:
+      position:
+        x: -224
+        "y": 0
+      tempMetlId: 1071
+    stg_pb2002:
+      position:
+        x: 256
+        "y": -64
+      tempMetlId: 1072
+    stg_quakes:
+      position:
+        x: 256
+        "y": 64
+      tempMetlId: 1073
+    Load PB2002:
+      position:
+        x: 432
+        "y": -64
+      tempMetlId: 1074
+    Load Earthquakes:
+      position:
+        x: 432
+        "y": 64
+      tempMetlId: 1075
+    And 0:
+      position:
+        x: 608
+        "y": 0
+      tempMetlId: 1076
+    PB2002 xform:
+      position:
+        x: 720
+        "y": 0
+      tempMetlId: 1077
+    S3 Unload 0:
+      position:
+        x: 880
+        "y": 0
+      tempMetlId: 1078
+    Check variables:
+      position:
+        x: -80
+        "y": 0
+      tempMetlId: 1079
+    Plate Boundaries:
+      position:
+        x: 80
+        "y": -64
+      tempMetlId: 1080
+    Earthquakes:
+      position:
+        x: 80
+        "y": 64
+      tempMetlId: 1081
+  notes:
+    "1069":
+      position:
+        x: -234
+        "y": 181
+      size:
+        height: 81
+        width: 740
+      theme: "green"
+      content: |-
+        These are the example jobs for [https://www.matillion.com/resources/developer-relations/geospatial-data-integration-using-matillion-etl](https://www.matillion.com/resources/developer-relations/geospatial-data-integration-using-matillion-etl)
+
+        The Tableau Public visualization is [https://public.tableau.com/app/profile/ian5843/viz/Earthquakes2018/Dashboard1](https://public.tableau.com/app/profile/ian5843/viz/Earthquakes2018/Dashboard1)
+
+        Run this job first, then open **example PB2002 transformation** to see the spatial join and transformations
+    "1068":
+      position:
+        x: 811
+        "y": -85
+      size:
+        height: 167
+        width: 153
+      theme: "green"
+      content: "Export the aggregated results for use downstream - \"reverse ETL\"\
+        \ or \"sync back\""
+    "1067":
+      position:
+        x: 656
+        "y": -85
+      size:
+        height: 168
+        width: 122
+      theme: "green"
+      content: "Perform the spatial data integration"
+    "1066":
+      position:
+        x: 372
+        "y": -148
+      size:
+        height: 284
+        width: 127
+      theme: "green"
+      content: "Load the raw input data into the Snowflake staging tables"
+    "1065":
+      position:
+        x: 195
+        "y": -148
+      size:
+        height: 284
+        width: 127
+      theme: "green"
+      content: "Recreate Snowflake staging tables"
+    "1064":
+      position:
+        x: -419
+        "y": -214
+      size:
+        height: 103
+        width: 323
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+
+        **examples_schema** (name of a Snowflake schema)
+    "1070":
+      position:
+        x: 27
+        "y": -149
+      size:
+        height: 285
+        width: 104
+      theme: "green"
+      content: "Copy source data into cloud storage"

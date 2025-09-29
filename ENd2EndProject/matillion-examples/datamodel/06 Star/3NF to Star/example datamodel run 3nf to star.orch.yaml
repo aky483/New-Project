@@ -1,0 +1,99 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Part 1:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "Part 2"
+      skipped: false
+      parameters:
+        componentName: "Part 1"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/06 Star/3NF\
+          \ to Star/example datamodel xform 3nf to star part 1"
+        setScalarVariables:
+        setGridVariables:
+    Part 2:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "Part 3"
+      skipped: false
+      parameters:
+        componentName: "Part 2"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/06 Star/3NF\
+          \ to Star/example datamodel xform 3nf to star part 2"
+        setScalarVariables:
+        setGridVariables:
+    Part 3:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "Part 3"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/06 Star/3NF\
+          \ to Star/example datamodel xform 3nf to star part 3"
+        setScalarVariables:
+        setGridVariables:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "DDL"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    DDL:
+      type: "run-orchestration"
+      transitions:
+        success:
+        - "Part 1"
+      skipped: false
+      parameters:
+        componentName: "DDL"
+        orchestrationJob: "ENd2EndProject/matillion-examples/datamodel/06 Star/example\
+          \ datamodel star schema ddl"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Part 1:
+      position:
+        x: 240
+        "y": 0
+      tempMetlId: 1313
+    Part 2:
+      position:
+        x: 352
+        "y": 0
+      tempMetlId: 1314
+    Part 3:
+      position:
+        x: 464
+        "y": 0
+      tempMetlId: 1315
+    Start 0:
+      position:
+        x: 0
+        "y": 0
+      tempMetlId: 1316
+    DDL:
+      position:
+        x: 131
+        "y": 6
+      tempMetlId: 1317
+  notes:
+    "1312":
+      position:
+        x: -211
+        "y": -192
+      size:
+        height: 99
+        width: 452
+      theme: "green"
+      content: |-
+        Run this job after completing 04 3NF
+
+        This job orchestrates the transformation of data from a 3NF model into a Star Schema.
+
+        For guidelines on building a Star Schema with Matillion, please see [https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion](https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion)

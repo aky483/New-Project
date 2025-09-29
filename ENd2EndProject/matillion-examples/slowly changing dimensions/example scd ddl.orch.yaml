@@ -1,0 +1,275 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create dim_worldclockapi_type1:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "Create dim_worldclockapi_type1"
+        createMethod: "Create if not exists"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "dim_worldclockapi_type1"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "timeZoneName"
+          - "VARCHAR"
+          - "20"
+          - ""
+          - ""
+          - "Yes"
+          - "Yes"
+          - ""
+        - - "currentDateTime"
+          - "VARCHAR"
+          - "64"
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        - - "currentFileTime"
+          - "NUMBER"
+          - ""
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        - - "dayOfTheWeek"
+          - "VARCHAR"
+          - "20"
+          - ""
+          - ""
+          - "Yes"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Create seq 2:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Create dim_worldclockapi_type2"
+      skipped: false
+      parameters:
+        componentName: "Create seq 2"
+        sqlScript: |
+          CREATE SEQUENCE IF NOT EXISTS "${environment_database}"."${examples_schema}"."seq_worldclockapi_type2";
+    Create dim_worldclockapi_type2:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "Create dim_worldclockapi_type2"
+        sqlScript: "CREATE TABLE IF NOT EXISTS \"${environment_database}\".\"${examples_schema}\"\
+          .\"dim_worldclockapi_type2\" (\n\t\"sk\" NUMBER DEFAULT \"${environment_database}\"\
+          .\"${examples_schema}\".\"seq_worldclockapi_type2\".NEXTVAL NOT NULL UNIQUE,\n\
+          \t\"timeZoneName\"    VARCHAR NOT NULL,\n\t\"currentDateTime\" VARCHAR NOT\
+          \ NULL,\n\t\"currentFileTime\" NUMBER  NOT NULL,\n\t\"dayOfTheWeek\"   \
+          \ VARCHAR NOT NULL,\n\t\"ValidFrom\"       TIMESTAMP_NTZ NOT NULL,\n\t\"\
+          ValidTo\"         TIMESTAMP_NTZ NOT NULL,\n\t\"Version\"         NUMBER(10,0)\
+          \  NOT NULL,\n    \"CurrentFlag\"     BOOLEAN       NOT NULL,\n  CONSTRAINT\
+          \ ux1_seq_worldclockapi_type2 UNIQUE (\"timeZoneName\", \"Version\"),\n\
+          \  CONSTRAINT ux2_seq_worldclockapi_type2 UNIQUE (\"timeZoneName\", \"ValidFrom\"\
+          )\n)"
+    Create norm_worldclockapi_history:
+      type: "sql-script"
+      transitions:
+        success:
+        - "example scd ddl virtualization"
+      skipped: false
+      parameters:
+        componentName: "Create norm_worldclockapi_history"
+        sqlScript: "CREATE TABLE IF NOT EXISTS \"${environment_database}\".\"${examples_schema}\"\
+          .\"norm_worldclockapi_history\" (\n\t\"sk\" NUMBER DEFAULT \"${environment_database}\"\
+          .\"${examples_schema}\".\"seq_worldclockapi_hist\".NEXTVAL NOT NULL UNIQUE,\n\
+          \t\"timeZoneName\"    VARCHAR(20)   NOT NULL,\n\t\"AsAt\"            TIMESTAMP_NTZ\
+          \ NOT NULL,\n\t\"currentDateTime\" VARCHAR(64)       NULL,\n\t\"currentFileTime\"\
+          \ NUMBER            NULL,\n\t\"dayOfTheWeek\"    VARCHAR(20)       NULL,\n\
+          \    CONSTRAINT ux1_norm_worldclockapi_history UNIQUE (\"timeZoneName\"\
+          , \"AsAt\")\n)"
+    Create Hist Seq:
+      type: "sql-script"
+      transitions:
+        success:
+        - "Create norm_worldclockapi_history"
+      skipped: false
+      parameters:
+        componentName: "Create Hist Seq"
+        sqlScript: |
+          CREATE SEQUENCE IF NOT EXISTS "${environment_database}"."${examples_schema}"."seq_worldclockapi_hist";
+    example scd ddl virtualization:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "example scd ddl virtualization"
+        transformationJob: "ENd2EndProject/matillion-examples/slowly changing dimensions/example\
+          \ scd ddl virtualization"
+        setScalarVariables:
+        setGridVariables:
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Create dim_worldclockapi_type1"
+        - "Create seq 2"
+        - "Create Hist Seq"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        timeout: "360"
+design:
+  components:
+    Start 0:
+      position:
+        x: -608
+        "y": 96
+      tempMetlId: 1509
+    Create dim_worldclockapi_type1:
+      position:
+        x: -112
+        "y": -160
+      tempMetlId: 1510
+    Create seq 2:
+      position:
+        x: -128
+        "y": 16
+      tempMetlId: 1511
+    Create dim_worldclockapi_type2:
+      position:
+        x: 32
+        "y": 16
+      tempMetlId: 1512
+    Create norm_worldclockapi_history:
+      position:
+        x: 32
+        "y": 160
+      tempMetlId: 1513
+    Create Hist Seq:
+      position:
+        x: -128
+        "y": 160
+      tempMetlId: 1514
+    example scd ddl virtualization:
+      position:
+        x: 288
+        "y": 160
+      tempMetlId: 1515
+    Check variables:
+      position:
+        x: -432
+        "y": 96
+      tempMetlId: 1516
+  notes:
+    "1503":
+      position:
+        x: -183
+        "y": -204
+      size:
+        height: 102
+        width: 245
+      theme: "green"
+      content: "The Type 1 dimension"
+    "1502":
+      position:
+        x: -184
+        "y": -315
+      size:
+        height: 76
+        width: 529
+      theme: "green"
+      content: |-
+        This is the DDL for:
+        * all the variations of the physical SCD tables
+         * the backing table for the virtualized dimensions
+         * the virtualized dimensions themselves (views)
+    "1508":
+      position:
+        x: -1053
+        "y": -316
+      size:
+        height: 281
+        width: 543
+      theme: "green"
+      content: |-
+        These are the example jobs from the Slowly Changing Dimension (SCD) article at [https://www.matillion.com/resources/blog/data-warehouse-time-variance-with-matillion-etl](https://www.matillion.com/resources/blog/data-warehouse-time-variance-with-matillion-etl)
+
+        Start here! Run this job first to create the database objects
+        Then run **example scd extract and load** many times, to load initial data and build up some history
+        Afterwards use the **example scd viewer** job to sample the data
+
+        The jobs demonstrate two different methods of managing Slowly Changing Dimensions:
+        1. Physical dimension tables (type 1 and type 2)
+        2. Virtualized dimension tables (type 1, type 2, type 3 and type 6)
+
+        Virtualizing the dimensions is generally simpler overall, but requires a backing table - norm_worldclockapi_history in this example. For more information on this subject, please take a look at [https://www.matillion.com/resources/blog/multi-tier-data-architectures-with-matillion-etl](https://www.matillion.com/resources/blog/multi-tier-data-architectures-with-matillion-etl)
+
+        More information on implementing star schemas with Matillion is available at:
+        [https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion](https://www.matillion.com/resources/blog/building-a-star-schema-with-matillion)
+        [https://www.matillion.com/resources/blog/top-10-tips-for-creating-dimension-tables-using-matillion](https://www.matillion.com/resources/blog/top-10-tips-for-creating-dimension-tables-using-matillion)
+        [https://www.matillion.com/resources/blog/top-10-tips-for-creating-fact-tables-using-matillion](https://www.matillion.com/resources/blog/top-10-tips-for-creating-fact-tables-using-matillion)
+    "1507":
+      position:
+        x: -1052
+        "y": 29
+      size:
+        height: 130
+        width: 394
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+
+        **examples_schema** (name of a Snowflake schema)
+    "1506":
+      position:
+        x: 188
+        "y": 96
+      size:
+        height: 111
+        width: 184
+      theme: "green"
+      content: "The virtualized dimensions"
+    "1505":
+      position:
+        x: -181
+        "y": 97
+      size:
+        height: 109
+        width: 329
+      theme: "green"
+      content: "The backing table and sequence for the virtualized dimensions"
+    "1504":
+      position:
+        x: -182
+        "y": -74
+      size:
+        height: 141
+        width: 512
+      theme: "green"
+      content: |-
+        The Type 2 dimension
+        Note the use of a Sequence object to help with the surrogate keys

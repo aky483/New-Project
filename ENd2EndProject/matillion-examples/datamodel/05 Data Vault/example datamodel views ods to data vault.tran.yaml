@@ -1,0 +1,133 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    ods_iot_event:
+      type: "table-input"
+      parameters:
+        componentName: "ods_iot_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "ods_iot_event"
+        columnNames:
+        - "ts"
+        - "equipment"
+        - "temperature"
+        timeOffset: ""
+    Rename 0:
+      type: "rename"
+      sources:
+      - "ods_iot_event"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "equipment"
+          - "equipment"
+    Distinct 0:
+      type: "distinct"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Distinct 0"
+        columns:
+        - "equipment"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Distinct 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "No"
+        calculations:
+        - - "\"equipment\""
+          - "equipment_id"
+        - - "'Unknown'"
+          - "name"
+        - - "'normal' /* Have to hardcode this value because it is not in the data\
+            \ */"
+          - "fan_status"
+    Create v_hub_equipment_source:
+      type: "create-view"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Create v_hub_equipment_source"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "v_hub_equipment_source"
+        secureView: "No"
+        viewType: "Standard"
+    Rename 1:
+      type: "rename"
+      sources:
+      - "ods_iot_event"
+      parameters:
+        componentName: "Rename 1"
+        columnMapping:
+        - - "ts"
+          - "ts"
+        - - "equipment"
+          - "equipment_alias"
+        - - "equipment"
+          - "equipment_id"
+        - - "temperature"
+          - "temperature"
+    Create v_bubble_event_source:
+      type: "create-view"
+      sources:
+      - "Rename 1"
+      parameters:
+        componentName: "Create v_bubble_event_source"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "v_bubble_event_source"
+        secureView: "No"
+        viewType: "Standard"
+design:
+  components:
+    ods_iot_event:
+      position:
+        x: 384
+        "y": 320
+      tempMetlId: 1261
+    Rename 0:
+      position:
+        x: 580
+        "y": 243
+      tempMetlId: 1262
+    Distinct 0:
+      position:
+        x: 676
+        "y": 243
+      tempMetlId: 1263
+    Calculator 0:
+      position:
+        x: 772
+        "y": 243
+      tempMetlId: 1264
+    Create v_hub_equipment_source:
+      position:
+        x: 996
+        "y": 243
+      tempMetlId: 1265
+    Rename 1:
+      position:
+        x: 580
+        "y": 403
+      tempMetlId: 1266
+    Create v_bubble_event_source:
+      position:
+        x: 996
+        "y": 403
+      tempMetlId: 1267
+  notes:
+    "1260":
+      position:
+        x: 124
+        "y": 282
+      size:
+        height: 77
+        width: 194
+      theme: "green"
+      content: "This uses the same input table as **example datamodel ODS to 3NF**\
+        \ but this job is preparing the data for load into a Data Vault 2.0 model"

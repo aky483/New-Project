@@ -1,0 +1,149 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_batteryelectric_narrow:
+      type: "table-input"
+      parameters:
+        componentName: "stg_batteryelectric_narrow"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_batteryelectric_narrow"
+        columnNames:
+        - "Make"
+        - "Model"
+        - "Quarter"
+        - "Vehicles"
+        timeOffset: ""
+    PIVOT - narrow to wide:
+      type: "sql"
+      sources:
+      - "stg_batteryelectric_narrow"
+      parameters:
+        componentName: "PIVOT - narrow to wide"
+        query: "SELECT * \nFROM ($T{stg_batteryelectric_narrow}) \nPIVOT (\n     \
+          \   SUM(\"Vehicles\") \n        FOR \"Quarter\" IN (${jv_col_list}) \n \
+          \     )\nAS P (MAKE, MODEL, ${jv_pivot_aliases})"
+    Make Only:
+      type: "rename"
+      sources:
+      - "stg_batteryelectric_narrow"
+      parameters:
+        componentName: "Make Only"
+        columnMapping:
+        - - "Make"
+          - "Make"
+        - - "Quarter"
+          - "Quarter"
+        - - "Vehicles"
+          - "Vehicles"
+        includeInputColumns: "No"
+    PIVOT on Make only:
+      type: "sql"
+      sources:
+      - "Make Only"
+      parameters:
+        componentName: "PIVOT on Make only"
+        query: "SELECT * \nFROM ($T{Make Only}) \nPIVOT (\n        SUM(\"Vehicles\"\
+          ) \n        FOR \"Quarter\" IN (${jv_col_list}) \n      )\nAS P (MAKE, ${jv_pivot_aliases})"
+  variables:
+    jv_col_list:
+      metadata:
+        type: "TEXT"
+        description: |-
+          A comma-separated list of column names, in single-quotes.
+          Normally you would NOT supply a default value in production, because it gets supplied at runtime by the calling job.
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "'2022 Q3','2022 Q2','2022 Q1','2021 Q4','2021 Q3','2021 Q2','2021\
+        \ Q1','2020 Q4','2020 Q3','2020 Q2','2020 Q1','2019 Q4','2019 Q3','2019 Q2','2019\
+        \ Q1','2018 Q4','2018 Q3','2018 Q2','2018 Q1','2017 Q4','2017 Q3','2017 Q2','2017\
+        \ Q1','2016 Q4','2016 Q3','2016 Q2','2016 Q1','2015 Q4','2015 Q3','2015 Q2','2015\
+        \ Q1','2014 Q4','2014 Q3','2014 Q2','2014 Q1','2013 Q4','2013 Q3','2013 Q2','2013\
+        \ Q1','2012 Q4','2012 Q3','2012 Q2','2012 Q1','2011 Q4','2011 Q3','2011 Q2','2011\
+        \ Q1','2010 Q4','2010 Q3','2010 Q2','2010 Q1'"
+    jv_pivot_aliases:
+      metadata:
+        type: "TEXT"
+        description: |-
+          A comma-separated list of alias names for pivoted columns.
+          Normally you would NOT supply a default value in production, because it gets supplied at runtime by the calling job.
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "COUNT_2022_Q3,COUNT_2022_Q2,COUNT_2022_Q1,COUNT_2021_Q4,COUNT_2021_Q3,COUNT_2021_Q2,COUNT_2021_Q1,COUNT_2020_Q4,COUNT_2020_Q3,COUNT_2020_Q2,COUNT_2020_Q1,COUNT_2019_Q4,COUNT_2019_Q3,COUNT_2019_Q2,COUNT_2019_Q1,COUNT_2018_Q4,COUNT_2018_Q3,COUNT_2018_Q2,COUNT_2018_Q1,COUNT_2017_Q4,COUNT_2017_Q3,COUNT_2017_Q2,COUNT_2017_Q1,COUNT_2016_Q4,COUNT_2016_Q3,COUNT_2016_Q2,COUNT_2016_Q1,COUNT_2015_Q4,COUNT_2015_Q3,COUNT_2015_Q2,COUNT_2015_Q1,COUNT_2014_Q4,COUNT_2014_Q3,COUNT_2014_Q2,COUNT_2014_Q1,COUNT_2013_Q4,COUNT_2013_Q3,COUNT_2013_Q2,COUNT_2013_Q1,COUNT_2012_Q4,COUNT_2012_Q3,COUNT_2012_Q2,COUNT_2012_Q1,COUNT_2011_Q4,COUNT_2011_Q3,COUNT_2011_Q2,COUNT_2011_Q1,COUNT_2010_Q4,COUNT_2010_Q3,COUNT_2010_Q2,COUNT_2010_Q1"
+design:
+  components:
+    stg_batteryelectric_narrow:
+      position:
+        x: 320
+        "y": 416
+      tempMetlId: 1732
+    PIVOT - narrow to wide:
+      position:
+        x: 528
+        "y": 336
+      tempMetlId: 1733
+    Make Only:
+      position:
+        x: 528
+        "y": 496
+      tempMetlId: 1734
+    PIVOT on Make only:
+      position:
+        x: 688
+        "y": 496
+      tempMetlId: 1735
+  notes:
+    "1731":
+      position:
+        x: 210
+        "y": 360
+      size:
+        height: 106
+        width: 190
+      theme: "yellow"
+      content: "This table is created in the wide-to-narrow transformation"
+    "1730":
+      position:
+        x: 630
+        "y": 430
+      size:
+        height: 121
+        width: 206
+      theme: "yellow"
+      content: "This pivot is by Make only, so the Sample tab should show only 47\
+        \ rows"
+    "1729":
+      position:
+        x: 460
+        "y": 271
+      size:
+        height: 110
+        width: 178
+      theme: "yellow"
+      content: |-
+        This pivot is by Make and Model.
+        Use the Sample tab to check it has 116 rows
+    "1728":
+      position:
+        x: 70
+        "y": 552
+      size:
+        height: 70
+        width: 344
+      theme: "yellow"
+      content: |-
+        The job variables **jv_col_list** and **jv_pivot_aliases** are supplied from the Table Metadata To Grid in the parent Orchestration Job.
+
+        They both have a hardcoded default value just for demonstration.
+    "1727":
+      position:
+        x: 27
+        "y": 261
+      size:
+        height: 46
+        width: 237
+      theme: "green"
+      content: |-
+        This is a transpose from **narrow** to **wide**
+        I.e. **rows** to **columns** (a PIVOT)

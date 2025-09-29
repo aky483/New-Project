@@ -1,0 +1,137 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    ONLINE_ORDERS:
+      type: "table-input"
+      parameters:
+        componentName: "ONLINE_ORDERS"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "ONLINE_ORDERS"
+        columnNames:
+        - "CUSTOMER_ID"
+        - "CUSTOMER_NAME"
+        - "ORDER_DATE"
+        - "AMOUNT"
+        timeOffset: ""
+    INSTORE_ORDERS:
+      type: "table-input"
+      parameters:
+        componentName: "INSTORE_ORDERS"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "INSTORE_ORDERS"
+        columnNames:
+        - "CUSTOMER_ID"
+        - "CUSTOMER_NAME"
+        - "ORDER_DATE"
+        - "AMOUNT"
+        timeOffset: ""
+    COMBINE ONLINE_ORDERS WITH INSTORE_ORDERS:
+      type: "unite"
+      sources:
+      - "ONLINE_ORDERS"
+      - "INSTORE_ORDERS"
+      parameters:
+        componentName: "COMBINE ONLINE_ORDERS WITH INSTORE_ORDERS"
+        method: "All Columns"
+        castTypes: "Yes"
+        addSourceComponentColumn: "No"
+        removeDuplicates: "Yes"
+    Rename Columns:
+      type: "rename"
+      sources:
+      - "Rank Latest Customer"
+      parameters:
+        componentName: "Rename Columns"
+        columnMapping:
+        - - "CUSTOMER_ID"
+          - "CUSTOMER_ID"
+        - - "CUSTOMER_NAME"
+          - "CUSTOMER_NAME"
+        - - "ORDER_DATE"
+          - "ORDER_DATE"
+        - - "AMOUNT"
+          - "AMOUNT"
+        includeInputColumns: "No"
+    Rewrite Table ONLINE_STORE_ORDERS:
+      type: "rewrite-table"
+      sources:
+      - "Rename Columns"
+      parameters:
+        componentName: "Rewrite Table ONLINE_STORE_ORDERS"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "ONLINE_STORE_ORDERS"
+        orderBy:
+        - - "CUSTOMER_ID"
+          - "Ascending"
+    Create View VW_ONLINE_INSTORE_ORDERS:
+      type: "create-view"
+      sources:
+      - "Rename Columns"
+      parameters:
+        componentName: "Create View VW_ONLINE_INSTORE_ORDERS"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        viewName: "VW_ONLINE_INSTORE_ORDERS"
+        secureView: "No"
+        viewType: "Standard"
+    Rank Latest Customer:
+      type: "first-last"
+      sources:
+      - "COMBINE ONLINE_ORDERS WITH INSTORE_ORDERS"
+      parameters:
+        componentName: "Rank Latest Customer"
+        groupingColumns:
+        - "CUSTOMER_ID"
+        orderingInPartitions:
+        - - "ORDER_DATE"
+          - "Desc"
+        firstLastColumns:
+        - - "CUSTOMER_NAME"
+          - "First"
+        - - "ORDER_DATE"
+          - "First"
+        - - "AMOUNT"
+          - "First"
+        ignoreNulls: "No"
+design:
+  components:
+    ONLINE_ORDERS:
+      position:
+        x: 192
+        "y": 134
+      tempMetlId: 76258
+    INSTORE_ORDERS:
+      position:
+        x: 192
+        "y": 224
+      tempMetlId: 76260
+    COMBINE ONLINE_ORDERS WITH INSTORE_ORDERS:
+      position:
+        x: 400
+        "y": 176
+      tempMetlId: 76311
+    Rename Columns:
+      position:
+        x: 736
+        "y": 176
+      tempMetlId: 76507
+    Rewrite Table ONLINE_STORE_ORDERS:
+      position:
+        x: 1056
+        "y": 80
+      tempMetlId: 76566
+    Create View VW_ONLINE_INSTORE_ORDERS:
+      position:
+        x: 1058
+        "y": 238
+      tempMetlId: 76620
+    Rank Latest Customer:
+      position:
+        x: 560
+        "y": 176
+      tempMetlId: 77191

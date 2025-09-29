@@ -1,0 +1,53 @@
+type: "orchestration"
+version: "1.0"
+pipeline: {}
+design:
+  notes:
+    "987":
+      position:
+        x: -244
+        "y": -149
+      size:
+        height: 382
+        width: 498
+      theme: "green"
+      content: |-
+        These examples are (c) 2023 Matillion Ltd
+
+        [https://www.matillion.com/resources/blog/how-to-use-the-matillion-etl-sample-jobs](https://www.matillion.com/resources/blog/how-to-use-the-matillion-etl-sample-jobs)
+
+        This code is licensed under the MIT license (see LICENSE.txt for details)
+
+        **MIT License**
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy
+        of this software and associated documentation files (the "Software"), to deal
+        in the Software without restriction, including without limitation the rights
+        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+        copies of the Software, and to permit persons to whom the Software is
+        furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all
+        copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+        SOFTWARE.
+    "988":
+      position:
+        x: -349
+        "y": 267
+      size:
+        height: 91
+        width: 720
+      theme: "green"
+      content: |-
+        You must ensure that Matillion is connected to Snowflake.
+
+        Please see this guide for reference:
+
+        [https://www.matillion.com/resources/developer-relations/connecting-matillion-etl-to-snowflake-a-guide](https://www.matillion.com/resources/developer-relations/connecting-matillion-etl-to-snowflake-a-guide)

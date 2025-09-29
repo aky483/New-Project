@@ -1,0 +1,167 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    destination:
+      type: "table-input"
+      parameters:
+        componentName: "destination"
+        database: "${JV_DB}"
+        schema: "${JV_SCHEMA}_DES"
+        targetTable: "${JV_TABLE_NAME}_DES"
+        columnNames:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+        timeOffset: ""
+    SQL 0:
+      type: "sql"
+      parameters:
+        componentName: "SQL 0"
+        query: "SELECT * FROM RESTAURANTSALES.RESTAURANT_DB_DES.${JV_TABLE_NAME}_VIEW"
+    Detect Changes 0:
+      type: "detect-changes"
+      sources:
+      - "destination"
+      - "SQL 0"
+      parameters:
+        componentName: "Detect Changes 0"
+        masterTable: "destination"
+        matchKeys:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+        compareColumns:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+        outputColumnMapping:
+        - - "master_${JV_PRIMARYKEY}"
+          - "compare_${JV_PRIMARYKEY}"
+        indicatorColumn: "Indicator"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Detect Changes 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "Indicator"
+          - "Not"
+          - "Equal to"
+          - "I"
+        - - "Indicator"
+          - "Not"
+          - "Equal to"
+          - "D"
+        combineCondition: "AND"
+    ORDER_DETAILS:
+      type: "table-update"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "ORDER_DETAILS"
+        warehouse: "COMPUTE_WH"
+        database: "${JV_DB}"
+        schema: "${JV_SCHEMA}"
+        targetTable: "${JV_TABLE_NAME}"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".${JV_PRIMARYKEY}=\"input\".${JV_PRIMARYKEY}"
+          - "Join"
+        whenMatched:
+        - - "\"target\".${JV_PRIMARYKEY}=\"input\".${JV_PRIMARYKEY}"
+          - "Update"
+        updateMapping:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+            - "Col_name"
+        includeNotMatched: "Yes"
+        insertMapping:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+            - "Col_name"
+  variables:
+    JV_DB:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANTSALES"
+    JV_SCHEMA:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANT_DB"
+    JV_PRIMARYKEY:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "ORDER_DETAILS_ID"
+    JV_TABLE_NAME:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "ORDER_DETAILS"
+    DES_COLUMNS:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+        columns:
+          Col_name:
+            columnType: "TEXT"
+          Primary_key:
+            columnType: "TEXT"
+      defaultValue:
+      - - "ORDER_DETAILS_ID"
+        - "Yes"
+      - - "ORDER_ID"
+        - "No"
+      - - "ORDER_DATE"
+        - "No"
+      - - "ORDER_TIME"
+        - "No"
+design:
+  components:
+    destination:
+      position:
+        x: 231
+        "y": 85
+      tempMetlId: 4281
+    SQL 0:
+      position:
+        x: 229
+        "y": 179
+      tempMetlId: 4282
+    Detect Changes 0:
+      position:
+        x: 371
+        "y": 132
+      tempMetlId: 4283
+    Filter 0:
+      position:
+        x: 498
+        "y": 131
+      tempMetlId: 4284
+    ORDER_DETAILS:
+      position:
+        x: 715
+        "y": 127
+      tempMetlId: 4285

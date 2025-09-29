@@ -1,0 +1,365 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    norm_worldclockapi_history:
+      type: "table-input"
+      parameters:
+        componentName: "norm_worldclockapi_history"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_worldclockapi_history"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "AsAt"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        timeOffset: ""
+    Rank T1:
+      type: "rank"
+      sources:
+      - "norm_worldclockapi_history"
+      parameters:
+        componentName: "Rank T1"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "timeZoneName"
+        orderingWithinPartitions:
+        - - "AsAt"
+          - "Desc"
+        functions:
+        - - "Row Number"
+          - "rn"
+    Filter T1:
+      type: "filter"
+      sources:
+      - "Rank T1"
+      parameters:
+        componentName: "Filter T1"
+        filterConditions:
+        - - "rn"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+    Rename T1:
+      type: "rename"
+      sources:
+      - "Filter T1"
+      parameters:
+        componentName: "Rename T1"
+        columnMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        includeInputColumns: "No"
+    Virtual Type 1:
+      type: "create-view"
+      sources:
+      - "Rename T1"
+      parameters:
+        componentName: "Virtual Type 1"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "dim_worldclock_virtual_type1"
+        secureView: "No"
+        viewType: "Standard"
+    Type 2 fields:
+      type: "sql"
+      sources:
+      - "norm_worldclockapi_history"
+      parameters:
+        componentName: "Type 2 fields"
+        query: "SELECT \n  *, \n  ROW_NUMBER() OVER (PARTITION BY \"timeZoneName\"\
+          \ ORDER BY \"AsAt\"  ASC) AS \"rnasc\",\n  1 = ROW_NUMBER() OVER (PARTITION\
+          \ BY \"timeZoneName\" ORDER BY \"AsAt\" DESC) AS \"CurrentFlag\",\n  COALESCE(DATEADD(SECOND,\
+          \ -1, LEAD(\"AsAt\", 1) OVER (PARTITION BY \"timeZoneName\" ORDER BY \"\
+          AsAt\" ASC)),\n           TO_TIMESTAMP_NTZ('${jv_infinity_date}')) AS \"\
+          ValidTo\"\nFROM $T{norm_worldclockapi_history}"
+    Rename T2:
+      type: "rename"
+      sources:
+      - "Type 2 fields"
+      parameters:
+        componentName: "Rename T2"
+        columnMapping:
+        - - "sk"
+          - "sk"
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        - - "AsAt"
+          - "ValidFrom"
+        - - "ValidTo"
+          - "ValidTo"
+        - - "rnasc"
+          - "Version"
+        - - "CurrentFlag"
+          - "CurrentFlag"
+        includeInputColumns: "No"
+    Virtual Type 2:
+      type: "create-view"
+      sources:
+      - "Rename T2"
+      parameters:
+        componentName: "Virtual Type 2"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "dim_worldclock_virtual_type2"
+        secureView: "No"
+        viewType: "Standard"
+    Type 3 fields:
+      type: "sql"
+      sources:
+      - "norm_worldclockapi_history"
+      parameters:
+        componentName: "Type 3 fields"
+        query: "SELECT \n  *, \n  ROW_NUMBER() OVER (PARTITION BY \"timeZoneName\"\
+          \ ORDER BY \"AsAt\"  ASC) AS \"rnasc\",\n  1 = ROW_NUMBER() OVER (PARTITION\
+          \ BY \"timeZoneName\" ORDER BY \"AsAt\" DESC) AS \"CurrentFlag\",\n  COALESCE(DATEADD(SECOND,\
+          \ -1, LEAD(\"AsAt\", 1) OVER (PARTITION BY \"timeZoneName\" ORDER BY \"\
+          AsAt\" ASC)),\n           TO_TIMESTAMP_NTZ('${jv_infinity_date}')) AS \"\
+          ValidTo\",\n  LAG(\"currentDateTime\", 1) OVER (PARTITION BY \"timeZoneName\"\
+          \ ORDER BY \"AsAt\" ASC) AS \"PriorDateTime\",\n  LAG(\"currentFileTime\"\
+          , 1) OVER (PARTITION BY \"timeZoneName\" ORDER BY \"AsAt\" ASC) AS \"PriorFileTime\"\
+          ,\n  LAG(\"dayOfTheWeek\", 1)    OVER (PARTITION BY \"timeZoneName\" ORDER\
+          \ BY \"AsAt\" ASC) AS \"PriorDayOfTheWeek\"\nFROM $T{norm_worldclockapi_history}"
+    Rename T3:
+      type: "rename"
+      sources:
+      - "Type 3 fields"
+      parameters:
+        componentName: "Rename T3"
+        columnMapping:
+        - - "sk"
+          - "sk"
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        - - "PriorDateTime"
+          - "PriorDateTime"
+        - - "PriorFileTime"
+          - "PriorFileTime"
+        - - "PriorDayOfTheWeek"
+          - "PriorDayOfTheWeek"
+        - - "AsAt"
+          - "ValidFrom"
+        - - "ValidTo"
+          - "ValidTo"
+        - - "rnasc"
+          - "Version"
+        - - "CurrentFlag"
+          - "CurrentFlag"
+        includeInputColumns: "No"
+    Virtual Type 3:
+      type: "create-view"
+      sources:
+      - "Rename T3"
+      parameters:
+        componentName: "Virtual Type 3"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "dim_worldclock_virtual_type3"
+        secureView: "No"
+        viewType: "Standard"
+    Join T6:
+      type: "join"
+      sources:
+      - "Rename T1"
+      - "Rename T2"
+      parameters:
+        componentName: "Join T6"
+        mainTable: "Rename T2"
+        mainTableAlias: "t2"
+        joins:
+        - - "Rename T1"
+          - "t1"
+          - "Inner"
+        joinExpressions:
+        - - "\"t1\".\"timeZoneName\" = \"t2\".\"timeZoneName\""
+          - "t2_Inner_t1"
+        columnMappings:
+        - - "t2.sk"
+          - "sk"
+        - - "t2.timeZoneName"
+          - "timeZoneName"
+        - - "t2.currentDateTime"
+          - "currentDateTime"
+        - - "t2.currentFileTime"
+          - "currentFileTime"
+        - - "t2.dayOfTheWeek"
+          - "dayOfTheWeek"
+        - - "t1.currentDateTime"
+          - "current_currentDateTime"
+        - - "t1.currentFileTime"
+          - "current_currentFileTime"
+        - - "t1.dayOfTheWeek"
+          - "current_dayOfTheWeek"
+        - - "t2.ValidFrom"
+          - "ValidFrom"
+        - - "t2.ValidTo"
+          - "ValidTo"
+        - - "t2.Version"
+          - "Version"
+        - - "t2.CurrentFlag"
+          - "CurrentFlag"
+    Virtual Type 6:
+      type: "create-view"
+      sources:
+      - "Join T6"
+      parameters:
+        componentName: "Virtual Type 6"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        viewName: "dim_worldclock_virtual_type6"
+        secureView: "No"
+        viewType: "Standard"
+  variables:
+    jv_infinity_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "5555-11-22"
+design:
+  components:
+    norm_worldclockapi_history:
+      position:
+        x: 256
+        "y": 320
+      tempMetlId: 1569
+    Rank T1:
+      position:
+        x: 512
+        "y": 176
+      tempMetlId: 1570
+    Filter T1:
+      position:
+        x: 624
+        "y": 176
+      tempMetlId: 1571
+    Rename T1:
+      position:
+        x: 736
+        "y": 176
+      tempMetlId: 1572
+    Virtual Type 1:
+      position:
+        x: 1056
+        "y": 176
+      tempMetlId: 1573
+    Type 2 fields:
+      position:
+        x: 560
+        "y": 368
+      tempMetlId: 1574
+    Rename T2:
+      position:
+        x: 736
+        "y": 368
+      tempMetlId: 1575
+    Virtual Type 2:
+      position:
+        x: 1056
+        "y": 368
+      tempMetlId: 1576
+    Type 3 fields:
+      position:
+        x: 560
+        "y": 464
+      tempMetlId: 1577
+    Rename T3:
+      position:
+        x: 736
+        "y": 464
+      tempMetlId: 1578
+    Virtual Type 3:
+      position:
+        x: 1056
+        "y": 464
+      tempMetlId: 1579
+    Join T6:
+      position:
+        x: 896
+        "y": 272
+      tempMetlId: 1580
+    Virtual Type 6:
+      position:
+        x: 1056
+        "y": 272
+      tempMetlId: 1581
+  notes:
+    "1568":
+      position:
+        x: 481
+        "y": 554
+      size:
+        height: 40
+        width: 506
+      theme: "yellow"
+      content: "In this example, the \"infinity\" date 5555-11-22 is held as a Job\
+        \ Variable **jv_infinity_date**"
+    "1567":
+      position:
+        x: 1115
+        "y": 245
+      size:
+        height: 58
+        width: 250
+      theme: "green"
+      content: "Same as Type2 but every row contains the current values too"
+    "1566":
+      position:
+        x: 1114
+        "y": 439
+      size:
+        height: 58
+        width: 250
+      theme: "green"
+      content: "Same as Type2 but adds prior values"
+    "1565":
+      position:
+        x: 1114
+        "y": 340
+      size:
+        height: 58
+        width: 250
+      theme: "green"
+      content: "Latest plus all historical values"
+    "1564":
+      position:
+        x: 1115
+        "y": 148
+      size:
+        height: 58
+        width: 250
+      theme: "green"
+      content: "Latest value only"
+    "1563":
+      position:
+        x: 136
+        "y": 186
+      size:
+        height: 229
+        width: 195
+      theme: "green"
+      content: "All four virtualized dimensions are automatically maintained consistently\
+        \ from just one actual table"

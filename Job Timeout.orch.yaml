@@ -1,0 +1,193 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  metadata:
+    description: "Unpacked from Shared Job [Job Timeout]."
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Generate the import statement"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Generate the import statement:
+      type: "python-script"
+      transitions:
+        success:
+        - "Verify libraries"
+      skipped: false
+      parameters:
+        componentName: "Generate the import statement"
+        script: |
+          import pathlib
+          from os import path
+
+          mypath = pathlib.Path(path.expanduser("~") + "/" + prvt_module_path).absolute()
+          context.updateVariable('prvt_import_statement', 'import sys;sys.path.insert(0, "{}")'.format(mypath))
+        interpreter: "Python 3"
+        timeout: "360"
+    Ensure the Python libraries are available:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Or 0"
+      skipped: false
+      parameters:
+        componentName: "Ensure the Python libraries are available"
+        script: |
+          # Ensure that requests is available
+          cd
+
+          mkdir -p "$prvt_module_path" || echo "$prvt_module_path exists"
+
+          $prvt_python_bin -m pip install --target="$HOME/$prvt_module_path" --ignore-installed requests
+
+          echo "Installed prerequisites"
+        timeout: "360"
+    Verify libraries:
+      type: "python-script"
+      transitions:
+        success:
+        - "Or 0"
+        failure:
+        - "Ensure the Python libraries are available"
+      skipped: false
+      parameters:
+        componentName: "Verify libraries"
+        script: "${prvt_import_statement}\n\nimport requests \nimport time\nimport\
+          \ json\nimport math\n"
+        interpreter: "Python 3"
+        timeout: "360"
+    Or 0:
+      type: "or"
+      transitions:
+        unconditional:
+        - "Reenerate the import statement"
+      skipped: false
+      parameters:
+        componentName: "Or 0"
+    Reenerate the import statement:
+      type: "python-script"
+      transitions:
+        success:
+        - "Timeout Loop"
+      skipped: false
+      parameters:
+        componentName: "Reenerate the import statement"
+        script: |
+          import pathlib
+          from os import path
+
+          mypath = pathlib.Path(path.expanduser("~") + "/" + prvt_module_path).absolute()
+          context.updateVariable('prvt_import_statement', 'import sys;sys.path.insert(0, "{}")'.format(mypath))
+        interpreter: "Python 3"
+        timeout: "360"
+    Timeout Loop:
+      type: "python-script"
+      skipped: false
+      parameters:
+        componentName: "Timeout Loop"
+        script: "${prvt_import_statement}\n\nimport requests \nimport time\nimport\
+          \ json\nimport math\n\n# cancel api call\ncancel_url=\"http://127.0.0.1:8080/rest/v1/group/name/\"\
+          \ + project_group_name + \"/project/name/\" + project_name + \"/task/id/\"\
+          \ + str(run_history_id) + \"/cancel\"\n\n# get task api call\ncheck_url\
+          \ =\"http://127.0.0.1:8080/rest/v1/task/instance?taskID=\" + str(run_history_id)\n\
+          \n# Find the number of 5 second intervals to loop before timing out\ntwelve=float(12)\n\
+          loop_number=math.trunc(float(str(jv_timeout_minutes))*twelve)\n\n# initialize\
+          \ run_count\nrun_count=0\n# Loop until timeout or until this task is the\
+          \ only one running\nfor x in range(loop_number):\n  \t# make a call to get\
+          \ running tasks\n\tresp = requests.get(check_url, auth=(jv_api_username,\
+          \ jv_api_password))\n    # load response\n\tdictionary=json.loads(resp.text)\n\
+          \    # reset count of running processes\n\trun_count=0\n    # Nested jobs\
+          \ will have running tasks we are not concerned with, so look for parentID\
+          \ > 0 when counting\n\tfor test in dictionary[\"tasks\"]:\n\t\tif( test[\"\
+          parentID\"] > 0 and test[\"state\"] == \"RUNNING\" ) :\n\t\t\trun_count+=1\n\
+          \    # If there are other tasks running, sleep and check again\n\tif ( run_count\
+          \ > 1 ):\n\t\ttime.sleep(5)\n\telse :\n\t\tbreak\n\n# if we have exhausted\
+          \ the timer and still have\n# other tasks running cancel this task\nif (\
+          \ run_count > 1 ):\n\tprint(\"Job timeout\")\n\tresp = requests.post(cancel_url,\
+          \ data={}, auth=(jv_api_username, jv_api_password))\n"
+        interpreter: "Python 3"
+        timeout: "360"
+  variables:
+    jv_api_password:
+      metadata:
+        type: "TEXT"
+        description: "That user’s password"
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: ""
+    jv_api_username:
+      metadata:
+        type: "TEXT"
+        description: "A user that has permission to use the API"
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: ""
+    prvt_python_bin:
+      metadata:
+        type: "TEXT"
+        description: "Path to the Python executable"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "/usr/bin/python3"
+    prvt_module_path:
+      metadata:
+        type: "TEXT"
+        description: "Subdirectory where Python modules will be installed"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "pip3_ensure/python3requests"
+    jv_timeout_minutes:
+      metadata:
+        type: "TEXT"
+        description: "Number of minutes the job is allowed to run before cancelling"
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "2"
+    prvt_import_statement:
+      metadata:
+        type: "TEXT"
+        description: "The search path statement"
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "import sys;"
+design:
+  components:
+    Start 0:
+      position:
+        x: -16
+        "y": -208
+      tempMetlId: 4421
+    Generate the import statement:
+      position:
+        x: 96
+        "y": -208
+      tempMetlId: 4422
+    Ensure the Python libraries are available:
+      position:
+        x: 352
+        "y": -128
+      tempMetlId: 4423
+    Verify libraries:
+      position:
+        x: 224
+        "y": -208
+      tempMetlId: 4424
+    Or 0:
+      position:
+        x: 464
+        "y": -208
+      tempMetlId: 4425
+    Reenerate the import statement:
+      position:
+        x: 592
+        "y": -208
+      tempMetlId: 4426
+    Timeout Loop:
+      position:
+        x: 720
+        "y": -208
+      tempMetlId: 4427

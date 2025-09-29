@@ -1,0 +1,248 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    API Query current time:
+      type: "api-query-v2"
+      transitions:
+        success:
+        - "Type 1 update"
+        - "Type 2 update (part 1)"
+        - "example scd update virtualized 0"
+      skipped: false
+      parameters:
+        componentName: "API Query current time"
+        basicAdvancedMode: "Basic"
+        authenticationMethod: "Other"
+        connectionOptions:
+        profile: "matillion-examples"
+        dataSource: "devrel-getutc"
+        dataSelection:
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "timeZoneName"
+        dataSourceFilter:
+        combineFilters: "And"
+        limit: ""
+        type: "Standard"
+        primaryKeys:
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_worldclockapi_utc"
+        stage: "[Custom]"
+        stagePlatform: "Existing Amazon S3 Location"
+        stageAuthentication: "Credentials"
+        s3StagingArea: "${examples_storage}"
+        encryption: "None"
+        loadOptions:
+        - "On"
+        - "Off"
+        - "On"
+        - ""
+        - "On"
+        - "None"
+        autoDebug: "Off"
+    Check API Access:
+      type: "unknown-orchestration"
+      transitions:
+        success:
+        - "API Query current time"
+      skipped: false
+      parameters:
+        "1": "Check API Access"
+        "2": "devrel.matillion.com"
+        "3": "443"
+    Type 1 update:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "Type 1 update"
+        transformationJob: "ENd2EndProject/matillion-examples/slowly changing dimensions/example\
+          \ scd type 1 update"
+        setScalarVariables:
+        setGridVariables:
+    Type 2 update (part 1):
+      type: "run-transformation"
+      transitions:
+        success:
+        - "Type 2 update (part 2)"
+      skipped: false
+      parameters:
+        componentName: "Type 2 update (part 1)"
+        transformationJob: "ENd2EndProject/matillion-examples/slowly changing dimensions/example\
+          \ scd type 2 update part 1"
+        setScalarVariables:
+        setGridVariables:
+    Type 2 update (part 2):
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "Type 2 update (part 2)"
+        transformationJob: "ENd2EndProject/matillion-examples/slowly changing dimensions/example\
+          \ scd type 2 update part 2"
+        setScalarVariables:
+        setGridVariables:
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Check API Access"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        timeout: "360"
+    example scd update virtualized 0:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "example scd update virtualized 0"
+        transformationJob: "ENd2EndProject/matillion-examples/slowly changing dimensions/example\
+          \ scd update virtualized"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Start 0:
+      position:
+        x: -496
+        "y": 0
+      tempMetlId: 1532
+    API Query current time:
+      position:
+        x: 112
+        "y": 0
+      tempMetlId: 1533
+    Check API Access:
+      position:
+        x: -128
+        "y": 0
+      tempMetlId: 1534
+    Type 1 update:
+      position:
+        x: 320
+        "y": -176
+      tempMetlId: 1535
+    Type 2 update (part 1):
+      position:
+        x: 400
+        "y": 0
+      tempMetlId: 1551
+    Type 2 update (part 2):
+      position:
+        x: 624
+        "y": 0
+      tempMetlId: 1552
+    Check variables:
+      position:
+        x: -320
+        "y": 0
+      tempMetlId: 1553
+    example scd update virtualized 0:
+      position:
+        x: 304
+        "y": 176
+      tempMetlId: 1554
+  notes:
+    "1525":
+      position:
+        x: -652
+        "y": -245
+      size:
+        height: 119
+        width: 358
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+
+        **examples_schema** (name of a Snowflake schema)
+    "1531":
+      position:
+        x: -616
+        "y": 126
+      size:
+        height: 69
+        width: 316
+      theme: "green"
+      content: |-
+        Run this job repeatedly, to build up some history.
+
+        Use the **example scd viewer** job to sample the data.
+    "1530":
+      position:
+        x: -223
+        "y": -187
+      size:
+        height: 263
+        width: 226
+      theme: "green"
+      content: |-
+        This job queries a REST API to generate some always-changing data.
+
+        This component checks that Matillion has access to the API.
+
+        For more discussion on this subject, please see [https://www.matillion.com/resources/blog/data-fabric-integration-using-the-matillion-etl-rest-api](https://www.matillion.com/resources/blog/data-fabric-integration-using-the-matillion-etl-rest-api)
+    "1529":
+      position:
+        x: 247
+        "y": -87
+      size:
+        height: 162
+        width: 501
+      theme: "green"
+      content: |-
+        Two separate transformation jobs are required for a manually-maintained type 2 dimension.
+        It is important that these two updates are separated, since they both affect the same target table.
+        For more information and background on this, please refer to [https://www.matillion.com/resources/developer-relations/developing-workflows-in-matillion-etl](https://www.matillion.com/resources/developer-relations/developing-workflows-in-matillion-etl)
+    "1528":
+      position:
+        x: 247
+        "y": 101
+      size:
+        height: 156
+        width: 323
+      theme: "green"
+      content: |-
+        Update the backing table for all the virtualized dimensions.
+        Note how much simpler this is than the above.
+    "1527":
+      position:
+        x: 245
+        "y": -232
+      size:
+        height: 118
+        width: 170
+      theme: "green"
+      content: "The manually-maintained type 1 dimension"
+    "1526":
+      position:
+        x: 42
+        "y": -87
+      size:
+        height: 163
+        width: 143
+      theme: "green"
+      content: |-
+        Call the REST API,
+        and (re)create stg_worldclockapi_utc

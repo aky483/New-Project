@@ -1,0 +1,220 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_worldclockapi_utc:
+      type: "table-input"
+      parameters:
+        componentName: "stg_worldclockapi_utc"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_worldclockapi_utc"
+        columnNames:
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "timeZoneName"
+        timeOffset: ""
+    dim_worldclockapi_type2:
+      type: "table-input"
+      parameters:
+        componentName: "dim_worldclockapi_type2"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "dim_worldclockapi_type2"
+        columnNames:
+        - "sk"
+        - "timeZoneName"
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "ValidFrom"
+        - "ValidTo"
+        - "Version"
+        - "CurrentFlag"
+        timeOffset: ""
+    Rank 0:
+      type: "rank"
+      sources:
+      - "stg_worldclockapi_utc"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "timeZoneName"
+        orderingWithinPartitions:
+        - - "currentDateTime"
+          - "Desc"
+        functions:
+        - - "Row Number"
+          - "rn"
+    Deduplicate:
+      type: "filter"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "Deduplicate"
+        filterConditions:
+        - - "rn"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+    Current only:
+      type: "sql"
+      sources:
+      - "dim_worldclockapi_type2"
+      parameters:
+        componentName: "Current only"
+        query: |-
+          SELECT *
+          FROM $T{dim_worldclockapi_type2}
+          WHERE "CurrentFlag"
+    Detect Changes 0:
+      type: "detect-changes"
+      sources:
+      - "Deduplicate"
+      - "Current only"
+      parameters:
+        componentName: "Detect Changes 0"
+        masterTable: "Current only"
+        matchKeys:
+        - "timeZoneName"
+        compareColumns:
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        outputColumnMapping:
+        - - "master_currentDateTime"
+          - "master_currentDateTime"
+        - - "compare_currentDateTime"
+          - "compare_currentDateTime"
+        - - "master_currentFileTime"
+          - "master_currentFileTime"
+        - - "compare_currentFileTime"
+          - "compare_currentFileTime"
+        - - "master_dayOfTheWeek"
+          - "master_dayOfTheWeek"
+        - - "compare_dayOfTheWeek"
+          - "compare_dayOfTheWeek"
+        - - "master_Version"
+          - "prior_version"
+        indicatorColumn: "Indicator"
+    Rewrite tmp Table:
+      type: "rewrite-table"
+      sources:
+      - "Add load date"
+      parameters:
+        componentName: "Rewrite tmp Table"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "tmp_worldclockapi_utc_delta"
+        orderBy:
+    Add load date:
+      type: "calculator"
+      sources:
+      - "Detect Changes 0"
+      parameters:
+        componentName: "Add load date"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "DATE_TRUNC('SECOND', TO_TIMESTAMP_NTZ(CURRENT_TIMESTAMP))"
+          - "load_timestamp"
+design:
+  components:
+    stg_worldclockapi_utc:
+      position:
+        x: 800
+        "y": 320
+      tempMetlId: 1611
+    dim_worldclockapi_type2:
+      position:
+        x: 800
+        "y": 464
+      tempMetlId: 1612
+    Rank 0:
+      position:
+        x: 1024
+        "y": 320
+      tempMetlId: 1613
+    Deduplicate:
+      position:
+        x: 1152
+        "y": 320
+      tempMetlId: 1614
+    Current only:
+      position:
+        x: 1152
+        "y": 464
+      tempMetlId: 1615
+    Detect Changes 0:
+      position:
+        x: 1392
+        "y": 384
+      tempMetlId: 1616
+    Rewrite tmp Table:
+      position:
+        x: 1728
+        "y": 384
+      tempMetlId: 1617
+    Add load date:
+      position:
+        x: 1536
+        "y": 384
+      tempMetlId: 1618
+  notes:
+    "1610":
+      position:
+        x: 1628
+        "y": 184
+      size:
+        height: 256
+        width: 361
+      theme: "yellow"
+      content: |
+        It is important that you do **not** insert and update the actual dimension table here. If you do add both a Table Update and a Table Output, multiple DML statements are generated and the results can be non deterministic.
+
+        Instead, persist the intermediate results and continue with part 2.
+
+        For more information and background on this, please refer to
+        [https://www.matillion.com/resources/developer-relations/developing-workflows-in-matillion-etl](https://www.matillion.com/resources/developer-relations/developing-workflows-in-matillion-etl)
+    "1609":
+      position:
+        x: 937
+        "y": 256
+      size:
+        height: 105
+        width: 319
+      theme: "yellow"
+      content: "It is important to make sure the intended primary key is unique, otherwise\
+        \ it can break the following change detection"
+    "1608":
+      position:
+        x: 714
+        "y": 412
+      size:
+        height: 96
+        width: 176
+      theme: "green"
+      content: "This is the existing data"
+    "1607":
+      position:
+        x: 715
+        "y": 257
+      size:
+        height: 104
+        width: 175
+      theme: "green"
+      content: "This is the new data"
+    "1606":
+      position:
+        x: 776
+        "y": 149
+      size:
+        height: 40
+        width: 419
+      theme: "green"
+      content: |-
+        This is a "type 2" dimension update.
+        It always creates a new row if anything has changed.

@@ -1,0 +1,109 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create ods_iot_event"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create ods_iot_event:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "example datamodel staging to ODS 0"
+      skipped: false
+      parameters:
+        componentName: "Create ods_iot_event"
+        createMethod: "Create if not exists"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "ods_iot_event"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "ts"
+          - "TIMESTAMP"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "equipment"
+          - "VARCHAR"
+          - "64"
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        - - "temperature"
+          - "FLOAT"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    example datamodel staging to ODS 0:
+      type: "run-transformation"
+      skipped: false
+      parameters:
+        componentName: "example datamodel staging to ODS 0"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/03 ODS/example\
+          \ datamodel staging to ODS"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Start 0:
+      position:
+        x: -176
+        "y": 0
+      tempMetlId: 1431
+    Create ods_iot_event:
+      position:
+        x: 160
+        "y": 0
+      tempMetlId: 1432
+    example datamodel staging to ODS 0:
+      position:
+        x: 448
+        "y": 0
+      tempMetlId: 1433
+  notes:
+    "1430":
+      position:
+        x: -502
+        "y": -210
+      size:
+        height: 135
+        width: 403
+      theme: "green"
+      content: |-
+        Run this job after completing 02 Staging``
+
+        This is an example of a staging-to-ODS data transformation.
+
+        Data structures in an ODS mirror those of the source system, so data is converted from its transport model (which is usually flat or semi-structured).
+
+        An ODS is a good source for independent operational reporting, as it should contain ``all the data from one source system.
+    "1429":
+      position:
+        x: -30
+        "y": -113
+      size:
+        height: 184
+        width: 343
+      theme: "green"
+      content: |-
+        This creates an Operational Data Store (ODS) table, sometimes also known as a Persistent Staging Area table.
+        These tables are permanent copies from source. They do not get dropped and recreated, so the option here is "Create if not exists"

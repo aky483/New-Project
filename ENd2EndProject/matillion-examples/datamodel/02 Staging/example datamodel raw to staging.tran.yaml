@@ -1,0 +1,114 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "raw_iot_event"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "TO_TIMESTAMP_NTZ(\"base\" || ' ' || \"timestamp\")"
+          - "ts"
+        - - "CAST(\"equipment\" AS VARCHAR(64))"
+          - "equipment_cast"
+        - - "TRY_TO_NUMBER(\"temperature\", 12, 4)"
+          - "temperature_conv"
+    Rename 0:
+      type: "rename"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Rename 0"
+        columnMapping:
+        - - "ts"
+          - "ts"
+        - - "equipment_cast"
+          - "equipment"
+        - - "temperature_conv"
+          - "temperature"
+    Rewrite stg_iot_event:
+      type: "rewrite-table"
+      sources:
+      - "Rename 0"
+      parameters:
+        componentName: "Rewrite stg_iot_event"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_iot_event"
+    raw_iot_event:
+      type: "table-input"
+      parameters:
+        componentName: "raw_iot_event"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "raw_iot_event"
+        columnNames:
+        - "timeunits"
+        - "base"
+        - "equipment"
+        - "id"
+        - "tempunits"
+        - "timestamp"
+        - "temperature"
+        timeOffset: ""
+design:
+  components:
+    Calculator 0:
+      position:
+        x: 512
+        "y": 272
+      tempMetlId: 1446
+    Rename 0:
+      position:
+        x: 624
+        "y": 272
+      tempMetlId: 1447
+    Rewrite stg_iot_event:
+      position:
+        x: 870
+        "y": 276
+      tempMetlId: 1448
+    raw_iot_event:
+      position:
+        x: 288
+        "y": 272
+      tempMetlId: 1449
+  notes:
+    "1445":
+      position:
+        x: 100
+        "y": 36
+      size:
+        height: 111
+        width: 374
+      theme: "green"
+      content: |-
+        Run this job after completing 01 Raw``
+
+        This is an example of a raw-to-staging data transformation.
+        Examples are fixing datatypes, and applying column naming standards.
+
+        Staging usually only contains a small set of recent changes, whereas an ODS contains ``all the data.
+    "1444":
+      position:
+        x: 465
+        "y": 185
+      size:
+        height: 165
+        width: 218
+      theme: "green"
+      content: "Check the Metadata tab to see the datatype transformations"
+    "1443":
+      position:
+        x: 793
+        "y": 183
+      size:
+        height: 166
+        width: 155
+      theme: "green"
+      content: "This is a raw-to-staging data copy operation, so a \"rewrite\" (i.e.\
+        \ a CTAS) is appropriate"

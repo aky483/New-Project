@@ -1,0 +1,85 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    src table:
+      type: "table-input"
+      parameters:
+        componentName: "src table"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB"
+        targetTable: "MENU_ITEMS"
+        columnNames:
+        - "MENU_ITEM_ID"
+        - "ITEM_NAME"
+        - "CATEGORY"
+        - "PRICE"
+        timeOffset: ""
+    Distinct 0:
+      type: "distinct"
+      sources:
+      - "src table"
+      parameters:
+        componentName: "Distinct 0"
+        columns:
+        - "MENU_ITEM_ID"
+        - "ITEM_NAME"
+        - "CATEGORY"
+        - "PRICE"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Distinct 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "MENU_ITEM_ID"
+          - "Not"
+          - "Null"
+          - ""
+        - - "ITEM_NAME"
+          - "Not"
+          - "Null"
+          - ""
+        - - "CATEGORY"
+          - "Not"
+          - "Null"
+          - ""
+        - - "PRICE"
+          - "Not"
+          - "Null"
+          - ""
+        combineCondition: "AND"
+    Create View 0:
+      type: "create-view"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Create View 0"
+        database: "RESTAURANTSALES"
+        schema: "RESTAURANT_DB_DES"
+        viewName: "MENU_ITEMS_VIEW"
+        secureView: "No"
+        viewType: "Standard"
+design:
+  components:
+    src table:
+      position:
+        x: 217
+        "y": 145
+      tempMetlId: 4261
+    Distinct 0:
+      position:
+        x: 343
+        "y": 150
+      tempMetlId: 4262
+    Filter 0:
+      position:
+        x: 470
+        "y": 146
+      tempMetlId: 4263
+    Create View 0:
+      position:
+        x: 613
+        "y": 139
+      tempMetlId: 4264

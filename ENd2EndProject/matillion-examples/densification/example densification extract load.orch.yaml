@@ -1,0 +1,191 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Check variables"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Data Transfer 0:
+      type: "data-transfer-object"
+      transitions:
+        success:
+        - "Recreate stg_xrate"
+      skipped: false
+      parameters:
+        componentName: "Data Transfer 0"
+        sourceType: "HTTPS"
+        performCertificateValidation: "No"
+        sourceUrl3: "${prvt_sample_data_url}"
+        sourceUsername1: ""
+        sourcePassword1: ""
+        unpackZipFile: "No"
+        targetType: "S3"
+        gzipData: "No"
+        targetObjectName: "matillion-examples/densification/AUD-2018-current.json"
+        targetUrl2: "s3://${examples_storage}"
+        accessControlListOptions: ""
+        encryption: "None"
+    Recreate stg_xrate:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "S3 Load 0"
+      skipped: false
+      parameters:
+        componentName: "Recreate stg_xrate"
+        createMethod: "Replace"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        table: "stg_xrate"
+        snowflakeTableType: "Permanent"
+        columns:
+        - - "row"
+          - "VARIANT"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    S3 Load 0:
+      type: "s3-load"
+      skipped: false
+      parameters:
+        componentName: "S3 Load 0"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://${examples_storage}"
+        pattern: "matillion-examples/densification/AUD-2018-current.json"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_xrate"
+        loadColumns:
+        format: "[Custom]"
+        fileType: "JSON"
+        compression: "AUTO"
+        enableOctal: "False"
+        allowDuplicates: "False"
+        stripOuterArray: "False"
+        stripNullValues: "False"
+        ignoreUtf8Errors: "False"
+        nullIf1:
+        trimSpace1: "False"
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        matchByColumnName: "None"
+        truncateColumns: "False"
+        forceLoad: "False"
+    Check variables:
+      type: "bash-script"
+      transitions:
+        success:
+        - "Data Transfer 0"
+      skipped: false
+      parameters:
+        componentName: "Check variables"
+        script: "# Check that the variables examples_storage and examples_schema exist\n\
+          # and have valid default values\n\nif [ -z \"${examples_storage}\" ]\nthen\n\
+          \techo \"You must set a default value for examples_storage under Project\
+          \ / Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_storage\
+          \ = '${examples_storage}'\"\nfi\n\nif [[ ${examples_storage} == s3* ]]\n\
+          then\n\techo \"The default value for examples_storage must not start with\
+          \ s3://\"\n    exit 99\nfi\n\nif [ -z \"${examples_schema}\" ]\nthen\n\t\
+          echo \"You must set a default value for examples_schema under Project /\
+          \ Manage Environment Variables\"\n    exit 99\nelse\n\techo \"examples_schema\
+          \ = '${examples_schema}'\"\nfi\n"
+        timeout: "360"
+  variables:
+    prvt_sample_data_url:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PRIVATE"
+      defaultValue: "https://s3.eu-west-1.amazonaws.com/devrel.matillion.com/data/semistructured/AUD-2018-current.json"
+design:
+  components:
+    Start 0:
+      position:
+        x: -272
+        "y": -48
+      tempMetlId: 1475
+    Data Transfer 0:
+      position:
+        x: 0
+        "y": -48
+      tempMetlId: 1476
+    Recreate stg_xrate:
+      position:
+        x: 160
+        "y": -48
+      tempMetlId: 1477
+    S3 Load 0:
+      position:
+        x: 272
+        "y": -51
+      tempMetlId: 1478
+    Check variables:
+      position:
+        x: -144
+        "y": -48
+      tempMetlId: 1479
+  notes:
+    "1474":
+      position:
+        x: -750
+        "y": -216
+      size:
+        height: 77
+        width: 578
+      theme: "yellow"
+      content: |
+        You **must** supply a default value for the following variables:
+
+        **examples_storage** (E.g. if your S3 bucket is named s3://the-bucket then set the default value to **the-bucket**)
+        **examples_schema** (name of a Snowflake schema)
+    "1473":
+      position:
+        x: 108
+        "y": -116
+      size:
+        height: 139
+        width: 224
+      theme: "green"
+      content: "Load the data into a Snowflake table with a single VARIANT column"
+    "1472":
+      position:
+        x: -52
+        "y": -116
+      size:
+        height: 140
+        width: 119
+      theme: "green"
+      content: "Copy source data into cloud storage"
+    "1471":
+      position:
+        x: -386
+        "y": 72
+      size:
+        height: 107
+        width: 723
+      theme: "green"
+      content: |
+        This is the example job from [https://www.matillion.com/resources/blog/numeric-densification-for-machine-learning-with-matillion-etl](https://www.matillion.com/resources/blog/numeric-densification-for-machine-learning-with-matillion-etl)
+
+        Run this job first, to load the data
+        Then open the **example densification transformation** job. Use the sample tab to view the results of the various densification methods
+
+        The Tableau Public visualization is [https://public.tableau.com/app/profile/ian5843/viz/AUD-EUR-Densified/Densification](https://public.tableau.com/app/profile/ian5843/viz/AUD-EUR-Densified/Densification)

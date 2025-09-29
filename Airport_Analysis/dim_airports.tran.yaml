@@ -1,0 +1,258 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    matillion_stg_airports:
+      type: "table-input"
+      parameters:
+        componentName: "matillion_stg_airports"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "matillion_stg_airports"
+        columnNames:
+        - "airport_data"
+        timeOffset: ""
+    matillion_us_state_lookup:
+      type: "table-input"
+      parameters:
+        componentName: "matillion_us_state_lookup"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "matillion_us_state_lookup"
+        columnNames:
+        - "name"
+        - "code"
+        timeOffset: ""
+    Flatten Variant:
+      type: "flatten-variant"
+      sources:
+      - "matillion_stg_airports"
+      parameters:
+        componentName: "Flatten Variant"
+        columnMapping:
+        - - "airport_data"
+          - "airport"
+          - "VARCHAR"
+          - ""
+        - - "airport_data"
+          - "iata"
+          - "VARCHAR"
+          - ""
+        - - "airport_data"
+          - "city"
+          - "VARCHAR"
+          - ""
+        - - "airport_data"
+          - "state"
+          - "VARCHAR"
+          - ""
+        - - "airport_data"
+          - "country"
+          - "VARCHAR"
+          - ""
+        - - "airport_data"
+          - "lat"
+          - "FLOAT"
+          - ""
+        - - "airport_data"
+          - "long"
+          - "FLOAT"
+          - ""
+        columnFlattens:
+    Clean:
+      type: "filter"
+      sources:
+      - "Flatten Variant"
+      parameters:
+        componentName: "Clean"
+        filterConditions:
+        - - "iata"
+          - "Not"
+          - "Null or blank"
+          - ""
+        - - "airport"
+          - "Not"
+          - "Null or blank"
+          - ""
+        - - "state"
+          - "Not"
+          - "Null or blank"
+          - ""
+        combineCondition: "AND"
+    Add current timestamp:
+      type: "calculator"
+      sources:
+      - "Clean"
+      parameters:
+        componentName: "Add current timestamp"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "CURRENT_DATE()"
+          - "last_updated"
+    Remove Duplicate Rows:
+      type: "distinct"
+      sources:
+      - "Add current timestamp"
+      parameters:
+        componentName: "Remove Duplicate Rows"
+        columns:
+        - "airport"
+        - "iata"
+        - "city"
+        - "state"
+        - "country"
+        - "lat"
+        - "long"
+        - "last_updated"
+    Join 0:
+      type: "join"
+      sources:
+      - "matillion_us_state_lookup"
+      - "Remove Duplicate Rows"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "Remove Duplicate Rows"
+        mainTableAlias: "a"
+        joins:
+        - - "matillion_us_state_lookup"
+          - "s"
+          - "Left"
+        joinExpressions:
+        - - "\"a\".\"state\"=\"s\".\"code\""
+          - "a_Left_s"
+        columnMappings:
+        - - "a.airport"
+          - "airport"
+        - - "a.iata"
+          - "iata"
+        - - "a.city"
+          - "city"
+        - - "a.state"
+          - "state"
+        - - "a.country"
+          - "country"
+        - - "a.lat"
+          - "lat"
+        - - "a.long"
+          - "long"
+        - - "a.last_updated"
+          - "last_updated"
+        - - "s.name"
+          - "name"
+        - - "s.code"
+          - "code"
+    Write Dimension:
+      type: "table-output"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Write Dimension"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "matillion_dim_airports"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "iata"
+          - "iata"
+        - - "airport"
+          - "airport"
+        - - "city"
+          - "city"
+        - - "state"
+          - "state"
+        - - "country"
+          - "country"
+        - - "lat"
+          - "lat"
+        - - "long"
+          - "long"
+        - - "name"
+          - "state_name"
+        - - "last_updated"
+          - "last_updated"
+        outputMode: "Truncate"
+design:
+  components:
+    matillion_stg_airports:
+      position:
+        x: 60
+        "y": 240
+      tempMetlId: 970
+    matillion_us_state_lookup:
+      position:
+        x: 790
+        "y": 360
+      tempMetlId: 971
+    Flatten Variant:
+      position:
+        x: 220
+        "y": 240
+      tempMetlId: 972
+    Clean:
+      position:
+        x: 350
+        "y": 240
+      tempMetlId: 973
+    Add current timestamp:
+      position:
+        x: 495
+        "y": 237
+      tempMetlId: 974
+    Remove Duplicate Rows:
+      position:
+        x: 646
+        "y": 243
+      tempMetlId: 975
+    Join 0:
+      position:
+        x: 860
+        "y": 250
+      tempMetlId: 976
+    Write Dimension:
+      position:
+        x: 1079
+        "y": 234
+      tempMetlId: 977
+  notes:
+    "966":
+      position:
+        x: 55
+        "y": 55
+      size:
+        height: 94
+        width: 326
+      theme: "white"
+      content: "You are viewing the \"Default\" version of your new project. You can\
+        \ save all the jobs within it in their current state by making a 'Version'.\
+        \ That way, you can continue to work on the default version knowing that you\
+        \ can always open and run a previous previous version. Editing a version requires\
+        \ unlocking, so you can't accidentally make changes (but they are still possible!)"
+    "967":
+      position:
+        x: 50
+        "y": 357
+      size:
+        height: 58
+        width: 250
+      theme: "white"
+      content: "Add 'Components' from the Components Palette. \n\nConnect them together\
+        \ to form a flow of data from source to target."
+    "968":
+      position:
+        x: 274
+        "y": 194
+      size:
+        height: 103
+        width: 425
+      theme: "white"
+      content: "Clean and organise the data"
+    "969":
+      position:
+        x: 766
+        "y": 192
+      size:
+        height: 218
+        width: 200
+      theme: "white"
+      content: "Join State Name"

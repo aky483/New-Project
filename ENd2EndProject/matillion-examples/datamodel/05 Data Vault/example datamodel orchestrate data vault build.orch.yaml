@@ -1,0 +1,164 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Stage to Hub - equipment:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Stage to Hub - equipment"
+        "2": "${examples_schema}"
+        "3": "${environment_database}"
+        "4": "Operational"
+        "5": "equipment"
+        "6": "v_hub_equipment_source"
+        "7": "equipment_id"
+    Stage to Hub - bubble_event:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Stage to Hub - bubble_event"
+        "2": "${examples_schema}"
+        "3": "${environment_database}"
+        "4": "Operational"
+        "5": "bubble_event"
+        "6": "v_bubble_event_source"
+        "7":
+        - "ts"
+        - "equipment_alias"
+    Stage to Link 0:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "Stage to Link 0"
+        "2": "${examples_schema}"
+        "3": "${environment_database}"
+        "4": "link"
+        "5": "Operational"
+        "6": "v_bubble_event_source"
+        "7":
+        - "equipment"
+        - "bubble_event"
+    example datamodel views ods to data vault 0:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "Stage to Hub - bubble_event"
+        - "Stage to Link 0"
+        - "Stage to Hub - equipment"
+      skipped: false
+      parameters:
+        componentName: "example datamodel views ods to data vault 0"
+        transformationJob: "ENd2EndProject/matillion-examples/datamodel/05 Data Vault/example\
+          \ datamodel views ods to data vault"
+        setScalarVariables:
+        setGridVariables:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "example datamodel views ods to data vault 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+design:
+  components:
+    Stage to Hub - equipment:
+      position:
+        x: -128
+        "y": -48
+      tempMetlId: 1251
+    Stage to Hub - bubble_event:
+      position:
+        x: -128
+        "y": 48
+      tempMetlId: 1252
+    Stage to Link 0:
+      position:
+        x: -128
+        "y": 144
+      tempMetlId: 1253
+    example datamodel views ods to data vault 0:
+      position:
+        x: -384
+        "y": 48
+      tempMetlId: 1254
+    Start 0:
+      position:
+        x: -528
+        "y": 48
+      tempMetlId: 1300
+  notes:
+    "1299":
+      position:
+        x: -974
+        "y": -224
+      size:
+        height: 169
+        width: 466
+      theme: "green"
+      content: |-
+        Run this job after completing 03 ODS``
+
+        This is an example of an ODS-to-Data Vault 2.0 data transformation. It reads from a layer of views on top of the ODS data.
+
+        Like 3NF, Data Vault represents the data in a system-independent, highly structured way.
+        More discussion on Data Vault at [https://www.matillion.com/resources/developer-relations/declarative-data-vault-2-0-in-snowflake-with-matillion-etl](https://www.matillion.com/resources/developer-relations/declarative-data-vault-2-0-in-snowflake-with-matillion-etl)
+
+        A Data Vault layer should contain ``all`` the data from ``all the relevant source systems.
+    "1298":
+      position:
+        x: -459
+        "y": -36
+      size:
+        height: 140
+        width: 149
+      theme: "yellow"
+      content: "Source View DDL"
+    "1297":
+      position:
+        x: -262
+        "y": -137
+      size:
+        height: 40
+        width: 367
+      theme: "yellow"
+      content: "This is a Data Vault 2.0 model, so all loading can run in parallel"
+    "1296":
+      position:
+        x: -236
+        "y": 221
+      size:
+        height: 60
+        width: 294
+      theme: "green"
+      content: |-
+        Note the Database parameters are set to the automatic variable ${environment_database}.
+        Its value comes from the Environment: you do not have to set it manually.
+    "1295":
+      position:
+        x: -43
+        "y": 118
+      size:
+        height: 54
+        width: 253
+      theme: "green"
+      content: "This creates **l_bubble_event_equipment_link** and **s_bubble_event_equipment_link**"
+    "1294":
+      position:
+        x: -44
+        "y": 25
+      size:
+        height: 48
+        width: 166
+      theme: "green"
+      content: "This creates **h_bubble_event** and **s_bubble_event**"
+    "1293":
+      position:
+        x: -44
+        "y": -67
+      size:
+        height: 51
+        width: 141
+      theme: "green"
+      content: "This creates **h_equipment** and **s_equipment**"

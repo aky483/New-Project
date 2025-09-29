@@ -1,0 +1,127 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    stg_worldclockapi_utc:
+      type: "table-input"
+      parameters:
+        componentName: "stg_worldclockapi_utc"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "stg_worldclockapi_utc"
+        columnNames:
+        - "currentDateTime"
+        - "currentFileTime"
+        - "dayOfTheWeek"
+        - "timeZoneName"
+        timeOffset: ""
+    Add AsAt date:
+      type: "calculator"
+      sources:
+      - "Deduplicate"
+      parameters:
+        componentName: "Add AsAt date"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "DATE_TRUNC('SECOND', TO_TIMESTAMP_NTZ(CURRENT_TIMESTAMP))"
+          - "AsAt"
+    norm_worldclockapi_history 0:
+      type: "table-output"
+      sources:
+      - "Add AsAt date"
+      parameters:
+        componentName: "norm_worldclockapi_history 0"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "${examples_schema}"
+        targetTable: "norm_worldclockapi_history"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "timeZoneName"
+          - "timeZoneName"
+        - - "AsAt"
+          - "AsAt"
+        - - "currentDateTime"
+          - "currentDateTime"
+        - - "currentFileTime"
+          - "currentFileTime"
+        - - "dayOfTheWeek"
+          - "dayOfTheWeek"
+        orderBy:
+        outputMode: "Append"
+    Rank 0:
+      type: "rank"
+      sources:
+      - "stg_worldclockapi_utc"
+      parameters:
+        componentName: "Rank 0"
+        includeInputColumns: "Yes"
+        partitionData:
+        - "timeZoneName"
+        orderingWithinPartitions:
+        - - "currentDateTime"
+          - "Desc"
+        functions:
+        - - "Row Number"
+          - "rn"
+    Deduplicate:
+      type: "filter"
+      sources:
+      - "Rank 0"
+      parameters:
+        componentName: "Deduplicate"
+        filterConditions:
+        - - "rn"
+          - "Is"
+          - "Equal to"
+          - "1"
+        combineCondition: "AND"
+design:
+  components:
+    stg_worldclockapi_utc:
+      position:
+        x: 160
+        "y": 176
+      tempMetlId: 1667
+    Add AsAt date:
+      position:
+        x: 688
+        "y": 176
+      tempMetlId: 1668
+    norm_worldclockapi_history 0:
+      position:
+        x: 864
+        "y": 176
+      tempMetlId: 1669
+    Rank 0:
+      position:
+        x: 368
+        "y": 176
+      tempMetlId: 1670
+    Deduplicate:
+      position:
+        x: 496
+        "y": 176
+      tempMetlId: 1671
+  notes:
+    "1666":
+      position:
+        x: 284
+        "y": 109
+      size:
+        height: 112
+        width: 283
+      theme: "green"
+      content: "It is important to make sure the intended primary key is unique"
+    "1665":
+      position:
+        x: 358
+        "y": -43
+      size:
+        height: 63
+        width: 370
+      theme: "green"
+      content: |-
+        This is a very simple and fast INSERT operation.
+
+        Just add a snapshot of the dimension data at the time it arrived.

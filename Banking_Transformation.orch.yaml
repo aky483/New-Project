@@ -1,0 +1,166 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Creating Banking Database"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Creating Banking Database:
+      type: "sql-script"
+      transitions:
+        unconditional:
+        - "Banking Schema Creation"
+      skipped: false
+      parameters:
+        componentName: "Creating Banking Database"
+        sqlScript: "CREATE OR REPLACE DATABASE BANKING;"
+    Banking Schema Creation:
+      type: "sql-script"
+      transitions:
+        success:
+        - "TXNS"
+        - "ORDER LIST"
+        unconditional:
+        - "ACCOUNT TABLE"
+        - "district table creation"
+        - "DISPOSITION"
+        - "CARD"
+        - "LOAN"
+        - "CLIENT"
+      skipped: false
+      parameters:
+        componentName: "Banking Schema Creation"
+        sqlScript: "CREATE OR REPLACE SCHEMA BANKING_SCHEMA;"
+    district table creation:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "district table creation"
+        sqlScript: "CREATE OR REPLACE TABLE DISTRICT\n(\nDistrict_Code INT PRIMARY\
+          \ KEY\t,\nDistrict_Name VARCHAR(100)\t,\nRegion VARCHAR(100)\t,\nNo_of_inhabitants\t\
+          INT,\nNo_of_municipalities_with_inhabitants_less_499 INT,\nNo_of_municipalities_with_inhabitants_500_btw_1999\t\
+          INT,\nNo_of_municipalities_with_inhabitants_2000_btw_9999\tINT,\nNo_of_municipalities_with_inhabitants_less_10000\
+          \ INT,\t\nNo_of_cities\tINT,\nRatio_of_urban_inhabitants\tFLOAT,\nAverage_salary\t\
+          INT,\nNo_of_entrepreneurs_per_1000_inhabitants INT,\nNo_committed_crime_2017\t\
+          INT,\nNo_committed_crime_2018 INT\n) ;"
+    ACCOUNT TABLE:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "ACCOUNT TABLE"
+        sqlScript: "CREATE OR REPLACE TABLE ACCOUNT(\naccount_id INT PRIMARY KEY,\n\
+          district_id\tINT,\nfrequency\tVARCHAR(40),\nDate DATE ,\nAccount_Type VARCHAR(100)\
+          \ ,\nCard_Assigned VARCHAR(20),\nFOREIGN KEY (district_id) references DISTRICT(District_Code)\
+          \ \n);"
+    ORDER LIST:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "ORDER LIST"
+        sqlScript: "CREATE OR REPLACE TABLE ORDER_LIST (\norder_id\tINT PRIMARY KEY,\n\
+          account_id\tINT,\nbank_to\tVARCHAR(45),\naccount_to\tINT,\namount FLOAT,\n\
+          FOREIGN KEY (account_id) references ACCOUNT(account_id)\n);"
+    LOAN:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "LOAN"
+        sqlScript: "CREATE OR REPLACE TABLE LOAN(\nloan_id\tINT ,\naccount_id\tINT,\n\
+          Date\tDATE,\namount\tINT,\nduration\tINT,\npayments\tINT,\nstatus VARCHAR(35),\n\
+          FOREIGN KEY (account_id) references ACCOUNT(account_id)\n);"
+    TXNS:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "TXNS"
+        sqlScript: "CREATE OR REPLACE TABLE TXNS\n(\ntrans_id INT,\t\naccount_id\t\
+          INT,\nDate\tDATE,\nType\tVARCHAR(30),\noperation\tVARCHAR(40),\namount\t\
+          INT,\nbalance\tFLOAT,\nPurpose\tVARCHAR(40),\nbank\tVARCHAR(45),\naccount_partner_id\
+          \ INT,\nFOREIGN KEY (account_id) references ACCOUNT(account_id));"
+    CLIENT:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "CLIENT"
+        sqlScript: "CREATE OR REPLACE TABLE CLIENT(\nclient_id\tINT PRIMARY KEY,\n\
+          Sex\tCHAR(10),\nBirth_date\tDATE,\ndistrict_id INT,\nFOREIGN KEY (district_id)\
+          \ references DISTRICT(District_Code) \n);"
+    DISPOSITION:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "DISPOSITION"
+        sqlScript: "CREATE OR REPLACE TABLE DISPOSITION(\ndisp_id\tINT PRIMARY KEY,\n\
+          client_id INT,\naccount_id\tINT,\ntype CHAR(15),\nFOREIGN KEY (account_id)\
+          \ references ACCOUNT(account_id),\nFOREIGN KEY (client_id) references CLIENT(client_id)\n\
+          );"
+    CARD:
+      type: "sql-script"
+      skipped: false
+      parameters:
+        componentName: "CARD"
+        sqlScript: "CREATE OR REPLACE TABLE CARD(\ncard_id\tINT PRIMARY KEY,\ndisp_id\t\
+          INT,\ntype CHAR(10)\t,\nissued DATE,\nFOREIGN KEY (disp_id) references DISPOSITION(disp_id)\n\
+          );"
+design:
+  components:
+    Start 0:
+      position:
+        x: -656
+        "y": -48
+      tempMetlId: 7184
+    Creating Banking Database:
+      position:
+        x: -484
+        "y": -46
+      tempMetlId: 7189
+    Banking Schema Creation:
+      position:
+        x: -272
+        "y": -48
+      tempMetlId: 7209
+    district table creation:
+      position:
+        x: -496
+        "y": -240
+      tempMetlId: 7247
+    ACCOUNT TABLE:
+      position:
+        x: -368
+        "y": -256
+      tempMetlId: 7275
+    ORDER LIST:
+      position:
+        x: -32
+        "y": -208
+      tempMetlId: 7307
+    LOAN:
+      position:
+        x: -16
+        "y": -112
+      tempMetlId: 7340
+    TXNS:
+      position:
+        x: -160
+        "y": -256
+      tempMetlId: 7374
+    CLIENT:
+      position:
+        x: -272
+        "y": -256
+      tempMetlId: 7450
+    DISPOSITION:
+      position:
+        x: -16
+        "y": 0
+      tempMetlId: 7457
+    CARD:
+      position:
+        x: -48
+        "y": 96
+      tempMetlId: 7459

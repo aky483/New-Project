@@ -1,0 +1,82 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    SQL 0:
+      type: "sql"
+      parameters:
+        componentName: "SQL 0"
+        query: "SELECT * FROM RESTAURANTSALES.RESTAURANT_DB_DES.${JV_TABLE_NAME}_VIEW"
+    MENU_ITEM_DES:
+      type: "table-output"
+      sources:
+      - "SQL 0"
+      parameters:
+        componentName: "MENU_ITEM_DES"
+        warehouse: "COMPUTE_WH"
+        database: "${JV_DB}"
+        schema: "${JV_SCHEMA}_DES"
+        targetTable: "${JV_TABLE_NAME}_DES"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+          fromGrid:
+            variable: "DES_COLUMNS"
+            columns:
+            - "Col_name"
+            - "Col_name"
+        orderBy:
+        outputMode: "Truncate"
+  variables:
+    JV_DB:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANTSALES"
+    JV_SCHEMA:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "RESTAURANT_DB"
+    JV_TABLE_NAME:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: "MENU_ITEMS"
+    DES_COLUMNS:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+        columns:
+          Col_name:
+            columnType: "TEXT"
+          Primary_key:
+            columnType: "TEXT"
+      defaultValue:
+      - - "MENU_ITEM_ID"
+        - "Yes"
+      - - "ITEM_NAME"
+        - "No"
+      - - "CATEGORY"
+        - "No"
+      - - "PRICE"
+        - "No"
+design:
+  components:
+    SQL 0:
+      position:
+        x: 355
+        "y": 172
+      tempMetlId: 4269
+    MENU_ITEM_DES:
+      position:
+        x: 503
+        "y": 175
+      tempMetlId: 4270
